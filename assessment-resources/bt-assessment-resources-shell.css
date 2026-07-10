@@ -1,0 +1,178 @@
+/* Critical shell — load on page; full assessment.css loads on first interaction */
+#assessment.assessment-section {
+  display: block;
+  max-width: 80rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+#assessment .assessment-shell,
+#assessment div:has(> #screenBody):has(> #screenFooter):not(.assessment-shell *),
+#assessment div:has(> .assessment-card):has(> #screenFooter):not(.assessment-shell *) {
+  position: relative;
+  background: #fff;
+  border: 2px solid #f7bfd0;
+  border-radius: 0 clamp(1.45rem, 2.4vw, 2.75rem) 0.25rem 0;
+  box-shadow: 6px 6px 0 0 #fdeff4;
+}
+
+#assessment .assessment-shell::before,
+#assessment div:has(> #screenBody):has(> #screenFooter):not(.assessment-shell *)::before,
+#assessment div:has(> .assessment-card):has(> #screenFooter):not(.assessment-shell *)::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.42rem;
+  background: linear-gradient(180deg, #d91e63, #5d2e8c);
+  z-index: 2;
+}
+
+#assessment .assessment-shell > .assessment-card {
+  background: #fff;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+#assessment .assessment-header,
+#assessment .assessment-body {
+  padding: clamp(1.65rem, 3vw, 3rem);
+  padding-left: clamp(2.2rem, 4vw, 3.5rem);
+  min-width: 0;
+  overflow-x: clip;
+}
+
+#assessment .assessment-header {
+  background: linear-gradient(135deg, rgba(254, 247, 250, 0.94), #fff);
+  border-bottom: 2px solid #eeebee;
+}
+
+#assessment .step-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  align-content: flex-start;
+  column-gap: 2rem;
+  row-gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+#assessment .assessment-title {
+  margin: 0 0 0.75rem;
+  padding-right: clamp(0rem, 9vw, 7rem);
+  font-size: clamp(2rem, 4.4vw, 3.35rem);
+  line-height: 1.08;
+  font-weight: 400;
+  color: #523859;
+}
+
+#assessment .assessment-copy {
+  margin: 0;
+  color: #523859;
+  font-size: clamp(1.125rem, 1.76vw, 1.25rem);
+  line-height: clamp(1.4rem, 2.25vw, 1.6rem);
+}
+
+#assessment .progress-slot {
+  margin-top: 1.75rem;
+  min-height: 1.5rem;
+}
+
+#assessment .progress-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: clamp(1rem, 1.58vw, 1.125rem);
+  color: #523859;
+}
+
+#assessment .progress-prompt-icon svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#assessment #mainProgressBar,
+#assessment .assessment-footer.is-hidden,
+#assessment #screenFooter.is-hidden {
+  display: none !important;
+}
+
+#assessment #mainProgressBar:not(.is-hidden) {
+  display: grid !important;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+#deliveryPanel.is-hidden {
+  display: none !important;
+}
+
+#assessment .assessment-footer,
+#assessment #screenFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.25rem clamp(1.65rem, 3vw, 3rem);
+  padding-left: clamp(2.2rem, 4vw, 3.5rem);
+  border-top: 1px solid #eeebee;
+  background: #fff;
+}
+
+#assessment .assessment-footer .button,
+#assessment #screenFooter .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+#assessment .btn-icon svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#assessment .assessment-body:empty {
+  display: none;
+}
+
+#assessment #screenBody:empty ~ #screenFooter {
+  display: none !important;
+}
+
+#assessment .is-hidden {
+  display: none !important;
+}
+
+#assessment.is-loading {
+  cursor: wait;
+}
+
+#assessment.is-loading .assessment-shell,
+#assessment.is-loading div:has(> #screenBody):has(> #screenFooter) {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+#assessment .assessment-load-hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.95rem;
+  color: #8f8496;
+}
+
+#assessment .assessment-load-hint.is-hidden {
+  display: none;
+}

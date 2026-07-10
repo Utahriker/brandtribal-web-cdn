@@ -1,0 +1,774 @@
+/**
+ * Webflow bridge — styles flattened DOM when shell classes are stripped.
+ * Load after assessment.css on Webflow pages only.
+ */
+#assessment {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3.5rem);
+  max-width: 80rem;
+  width: 100%;
+}
+
+/* Card shell — any nesting depth inside #assessment; excludes external Webflow heading blocks */
+#assessment .assessment-shell,
+#assessment div:has(> #screenBody):has(> #screenFooter):not(.assessment-shell *),
+#assessment div:has(> .assessment-card):has(> #screenFooter):not(.assessment-shell *) {
+  position: relative;
+  background: #fff;
+  border: 2px solid #f7bfd0;
+  border-radius: 0 clamp(1.45rem, 2.4vw, 2.75rem) 0.25rem 0;
+  box-shadow: 6px 6px 0 0 #fdeff4;
+}
+
+#assessment .assessment-shell::before,
+#assessment div:has(> #screenBody):has(> #screenFooter):not(.assessment-shell *)::before,
+#assessment div:has(> .assessment-card):has(> #screenFooter):not(.assessment-shell *)::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.42rem;
+  background: linear-gradient(180deg, #d91e63, #5d2e8c);
+  z-index: 2;
+}
+
+#assessment .assessment-shell > .assessment-card,
+#assessment .assessment-shell.assessment-card,
+#assessment div:has(> #screenBody):has(> #screenFooter):not(.assessment-shell *) {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+#assessment .assessment-shell > .assessment-card:not(.assessment-shell) {
+  overflow: hidden;
+}
+
+#assessment .assessment-shell.assessment-card {
+  overflow: visible;
+}
+
+/* Header — parent of #screenTitle (not the whole card wrapper) */
+#assessment div:has(> #screenTitle) {
+  padding: clamp(1.65rem, 3vw, 3rem);
+  padding-left: clamp(2.2rem, 4vw, 3.5rem);
+  background: linear-gradient(135deg, rgba(254, 247, 250, 0.94), #fff);
+  border-bottom: 2px solid #eeebee;
+  border-top-right-radius: inherit;
+}
+
+/* Step meta row */
+#assessment div:has(> #stepLabel),
+#assessment .step-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  align-content: flex-start;
+  column-gap: 2rem;
+  row-gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+#stepLabel,
+#topicLabel {
+  flex: 0 1 auto;
+  max-width: 100%;
+  font-family: "Cairo", Arial, sans-serif;
+  color: #5d2e8c;
+  font-size: clamp(1rem, 1.58vw, 1.125rem);
+  line-height: clamp(1.35rem, 2.14vw, 1.5rem);
+  font-weight: 600 !important;
+  letter-spacing: 0;
+}
+
+#stepLabel.is-script-eyebrow,
+#topicLabel.is-script-eyebrow {
+  font-family: "Caveat", cursive !important;
+  color: #d91e63 !important;
+  font-size: clamp(1.22rem, 2vw, 1.45rem);
+  line-height: 1.05;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 991px) {
+  #assessment div:has(> #stepLabel),
+  #assessment .step-meta {
+    scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px));
+  }
+}
+
+#screenTitle {
+  max-width: 58rem;
+  margin: 0 0 0.75rem;
+  padding-right: clamp(0rem, 9vw, 7rem);
+  font-size: clamp(2rem, 4.4vw, 3.35rem);
+  line-height: 1.08;
+  letter-spacing: -0.4px;
+  font-weight: 400;
+  color: #523859;
+}
+
+#screenCopy {
+  max-width: 54rem;
+  margin: 0;
+  font-size: clamp(1.125rem, 1.76vw, 1.25rem);
+  line-height: clamp(1.4rem, 2.25vw, 1.6rem);
+  color: #523859;
+}
+
+/* Progress / prompt */
+#progressPrompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.75rem 0 0;
+  color: #523859;
+}
+
+#progressPrompt strong {
+  font-size: clamp(1rem, 1.58vw, 1.125rem);
+  font-weight: 700;
+}
+
+#progressPrompt svg,
+#nextBtn svg,
+#backBtn svg,
+#assessment .btn-icon svg {
+  width: 1.125rem !important;
+  height: 1.125rem !important;
+  max-width: 1.125rem !important;
+  max-height: 1.125rem !important;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+#assessmentLoadHint,
+#finalCta {
+  display: none !important;
+}
+
+#assessmentLoadHint:not(.is-hidden) {
+  display: block !important;
+}
+
+#mainProgressBar {
+  display: none !important;
+}
+
+#mainProgressBar:not(.is-hidden),
+#assessment #mainProgressBar:not(.is-hidden) {
+  display: grid !important;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1.75rem;
+}
+
+@media (max-width: 991px) {
+  #mainProgressBar,
+  #mainProgressBar:not(.is-hidden),
+  #assessment #mainProgressBar,
+  #assessment #mainProgressBar:not(.is-hidden) {
+    display: none !important;
+  }
+}
+
+/* Main progress bar track + fill */
+
+#mainProgressTrack {
+  height: 0.55rem;
+  min-width: 0;
+  background: #fdeff4;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+#mainProgress {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #d91e63, #5d2e8c);
+  border-radius: inherit;
+  transition: width 0.3s ease;
+}
+
+#mainProgressText {
+  min-width: 3.4rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: #523859;
+  font-weight: 600;
+  font-size: clamp(0.85rem, 1.41vw, 1rem);
+  text-align: right;
+}
+
+#progressPrompt.is-hidden {
+  display: none !important;
+}
+
+/* Body + footer */
+#screenBody {
+  padding: clamp(1.65rem, 3vw, 3rem) clamp(1.65rem, 3vw, 3rem) clamp(1.25rem, 2.5vw, 1.75rem);
+  padding-left: clamp(2.2rem, 4vw, 3.5rem);
+  min-width: 0;
+  min-height: 0;
+  overflow-x: clip;
+}
+
+#screenBody:empty {
+  display: none;
+  padding: 0;
+}
+
+#screenFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 0;
+  padding: 1.25rem clamp(1.65rem, 3vw, 3rem);
+  padding-left: clamp(2.2rem, 4vw, 3.5rem);
+  border-top: 1px solid #eeebee;
+  background: #fff;
+}
+
+#screenFooter:has(#backBtn.is-hidden) {
+  justify-content: flex-end;
+}
+
+/* Match paired footer buttons to equal height; center label + icon inside each */
+#assessment #screenFooter .button,
+#assessment #screenFooter a.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+/* Custom arrow icon wrapper — additive; does not override site .button skin */
+#assessment .btn-icon {
+  width: 1.1em;
+  height: 1.1em;
+  display: inline-grid;
+  place-items: center;
+}
+
+#assessment .button.is-resource .btn-icon {
+  color: var(--base-color-brand--cerise, #d91e63);
+}
+
+#assessment .button.is-resource:hover .btn-icon {
+  color: var(--text-color--text-alternate, #fff);
+}
+
+/* Keep site button label colors — #assessment { color } otherwise wins via inheritance */
+#assessment a.button.w-button:not(.is-secondary):not(.is-neutral-outline):not(.is-quaternary),
+#assessment a.button:not(.is-secondary):not(.is-neutral-outline):not(.is-quaternary):not(.is-resource) {
+  color: var(--text-color--text-alternate, #fff);
+}
+
+#assessment a.button.is-secondary.is-quaternary,
+#assessment button.button.is-secondary.is-quaternary {
+  color: var(--text-color--text-primary, #523859);
+}
+
+#assessment a.button.is-secondary.is-quaternary:hover,
+#assessment button.button.is-secondary.is-quaternary:hover,
+#assessment #backBtn:hover {
+  color: var(--text-color--text-alternate, #fff);
+}
+
+#assessment a.button.is-secondary.is-resource {
+  color: var(--base-color-brand--purple, #5d2e8c);
+}
+
+#assessment a.button.is-secondary.is-resource:hover {
+  color: var(--text-color--text-alternate, #fff);
+}
+
+#assessment .is-hidden {
+  display: none !important;
+}
+
+/* JS-injected topic grid */
+#assessment .option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+#assessment .option-card {
+  min-height: 8.25rem;
+  border: 2px solid #eeebee;
+  background: #fff;
+  border-radius: 0.25rem;
+  width: 100%;
+  text-align: left;
+  padding: 1.25rem;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: start;
+  color: #523859;
+  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  box-shadow: none;
+  background-image: none;
+}
+
+#assessment button.option-card {
+  min-height: 8.25rem;
+  padding: 1.25rem;
+  display: grid;
+  justify-content: stretch;
+  text-align: left;
+}
+
+#assessment .option-card:hover,
+#assessment .option-card.is-selected {
+  border-color: #d91e63;
+  background: #fef7fa;
+  box-shadow: 6px 6px 0 0 #fdeff4;
+}
+
+#assessment .option-card span,
+#assessment .option-card strong {
+  color: #523859;
+  font-size: clamp(1rem, 1.58vw, 1.125rem);
+  line-height: clamp(1.35rem, 2.14vw, 1.5rem);
+  font-weight: 400;
+}
+
+#assessment .option-card strong {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+#assessment .priority-icon {
+  box-sizing: border-box;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0.5rem;
+  border-radius: 50%;
+  background: #fdeff4;
+  border: 1px solid #f7bfd0;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+#assessment .priority-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+#assessment .answer-dot {
+  width: 1.2rem;
+  height: 1.2rem;
+  min-width: 1.2rem;
+  border: 2px solid #dcd7de;
+  border-radius: 50%;
+  position: relative;
+  margin-top: 0;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+#assessment .answer-card.is-selected .answer-dot {
+  border-color: #d91e63;
+}
+
+#assessment .answer-card.is-selected .answer-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0.22rem;
+  border-radius: 50%;
+  background: #d91e63;
+}
+
+#assessment .insight-card,
+#assessment .priority-card {
+  border: 1px solid #eeebee;
+  background: #fff;
+  border-radius: 0.25rem;
+  color: #523859;
+}
+
+#assessment .insight-card.step-option-card--full-check {
+  background: #fdeff4;
+  border-color: #f7bfd0;
+}
+
+#assessment .insight-card small,
+#assessment .priority-card small {
+  font-family: "Caveat", cursive;
+  color: #d91e63;
+}
+
+#assessment .priority-list {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 992px) {
+  #assessment .priority-layout {
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    align-items: stretch;
+  }
+
+  #assessment .priority-layout {
+    min-height: 0;
+  }
+
+  #assessment .priority-visual {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #assessment .priority-visual-media {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    width: 100%;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  #assessment .priority-visual-media img {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: min(28rem, 100%);
+    object-fit: contain;
+    object-position: top center;
+    display: block;
+  }
+
+  #assessment .priority-visual-media::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    width: 100%;
+    height: clamp(2.5rem, 14%, 4.5rem);
+    background: linear-gradient(to top, #fff 0%, transparent 100%);
+    pointer-events: none;
+  }
+}
+
+/* Questions + answers */
+#assessment .answers {
+  display: grid;
+  gap: 1rem;
+}
+
+#assessment .answer-card {
+  width: 100%;
+  text-align: left;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid #aaa;
+  background: #fff;
+  border-radius: 0.25rem;
+  color: #523859;
+  font: inherit;
+  appearance: none;
+  min-height: 0;
+  box-shadow: none;
+  background-image: none;
+}
+
+#assessment .answer-card strong {
+  margin-bottom: 0;
+}
+
+#assessment .answer-card > span:last-child {
+  display: flex;
+  align-items: center;
+  min-height: 1.2rem;
+}
+
+#assessment button.answer-card {
+  min-height: 0;
+  padding: 1rem 1.25rem;
+  display: grid;
+  justify-content: stretch;
+  text-align: left;
+}
+
+#assessment .answer-card:hover,
+#assessment .answer-card.is-selected {
+  border-color: #d91e63;
+  background: #fef7fa;
+  box-shadow: 6px 6px 0 0 #fdeff4;
+}
+
+#assessment .error {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.25rem;
+  background: #fef3f2;
+  color: #b42318;
+  font-size: 0.95rem;
+}
+
+#assessment .error.is-hidden {
+  display: none !important;
+}
+
+/* Final CTA panel — matches website cta-banner-home / delivery panel */
+#finalCta:not(.is-hidden),
+#assessment .cta-panel:not(.is-hidden) {
+  position: relative;
+  overflow: hidden;
+  margin-top: 0;
+  border-radius: 0 clamp(2.2rem, 4.2vw, 6.2rem) 0 clamp(1.4rem, 2.8vw, 4rem);
+  color: #fff;
+}
+
+#assessment .assessment-shell + #finalCta:not(.is-hidden),
+#assessment .assessment-shell + .cta-panel:not(.is-hidden),
+#assessment > div:has(#screenBody) + #finalCta:not(.is-hidden),
+#assessment > div:has(#screenBody) + .cta-panel:not(.is-hidden),
+#assessment div:has(> #screenBody):has(> #screenFooter) + #finalCta:not(.is-hidden),
+#assessment div:has(> #screenBody):has(> #screenFooter) + .cta-panel:not(.is-hidden) {
+  margin-top: calc((clamp(2rem, 4vw, 3.5rem) + clamp(2rem, 4vw, 3rem)) * 0.5 - clamp(2rem, 4vw, 3.5rem));
+}
+
+#finalCta:not(.is-hidden):not(:has(.cta-panel-shell)),
+#assessment .cta-panel:not(.is-hidden):not(:has(.cta-panel-shell)) {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(1.25rem, 2.5vw, 1.75rem);
+  padding: clamp(2rem, 5vw, 5rem);
+  background: linear-gradient(135deg, #523859 25%, #d91e63);
+}
+
+#finalCta:not(.is-hidden):has(.cta-panel-shell),
+#assessment .cta-panel:not(.is-hidden):has(.cta-panel-shell) {
+  display: block !important;
+  padding: 0;
+  background: none;
+}
+
+#finalCta:not(.is-hidden) .cta-panel-shell,
+#assessment .cta-panel:not(.is-hidden) .cta-panel-shell {
+  position: relative;
+  overflow: hidden;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #523859 25%, #d91e63);
+}
+
+#finalCta:not(.is-hidden) .cta-panel-bkg-image,
+#assessment .cta-panel:not(.is-hidden) .cta-panel-bkg-image {
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  position: absolute;
+  inset: 0 -3.5rem 0 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#finalCta:not(.is-hidden) .cta-panel-bkg,
+#assessment .cta-panel:not(.is-hidden) .cta-panel-bkg {
+  position: absolute;
+  top: 0;
+  right: calc(-5rem + 100px);
+  width: 576px;
+  height: 576px;
+  object-fit: contain;
+  object-position: center center;
+}
+
+#finalCta:not(.is-hidden):not(:has(.cta-panel-bkg-image))::before,
+#assessment .cta-panel:not(.is-hidden):not(:has(.cta-panel-bkg-image))::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: calc(-5rem + 100px);
+  width: 576px;
+  height: 576px;
+  background: url("https://cdn.prod.website-files.com/652a4aa287d36e6c66430b76/698d35243b901212c7b8001a_pattern-white-circles.png") center / 576px 576px no-repeat;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#finalCta:not(.is-hidden) .cta-panel-inner,
+#assessment .cta-panel:not(.is-hidden) .cta-panel-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(1.25rem, 2.5vw, 1.75rem);
+  padding: clamp(2rem, 5vw, 5rem);
+}
+
+#finalCta:not(.is-hidden) .cta-copy,
+#finalCta:not(.is-hidden) .cta-actions,
+#finalCta:not(.is-hidden):not(:has(.cta-panel-inner)) > *,
+#assessment .cta-panel:not(.is-hidden) .cta-copy,
+#assessment .cta-panel:not(.is-hidden) .cta-actions,
+#assessment .cta-panel:not(.is-hidden):not(:has(.cta-panel-inner)) > * {
+  position: relative;
+  z-index: 1;
+  width: 70%;
+  max-width: 70%;
+}
+
+#finalCta:not(.is-hidden) h2,
+#finalCta:not(.is-hidden) h3,
+#assessment .cta-panel:not(.is-hidden) h2,
+#assessment .cta-panel:not(.is-hidden) h3 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.75rem, 4.22vw, 3rem);
+  line-height: 1.1;
+  font-weight: 600;
+  color: #fff;
+}
+
+#finalCta:not(.is-hidden) p,
+#assessment .cta-panel:not(.is-hidden) p {
+  margin: 0;
+  max-width: none;
+  color: #fff;
+}
+
+#finalCta:not(.is-hidden) .cta-actions,
+#finalCta:not(.is-hidden) > div:last-child,
+#assessment .cta-panel:not(.is-hidden) .cta-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+#finalCta:not(.is-hidden) .button,
+#finalCta:not(.is-hidden) a.button,
+#assessment .cta-panel:not(.is-hidden) .button,
+#assessment .cta-panel:not(.is-hidden) a.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+@media (max-width: 991px) {
+  #finalCta:not(.is-hidden):not(:has(.cta-panel-shell)),
+  #assessment .cta-panel:not(.is-hidden):not(:has(.cta-panel-shell)) {
+    gap: clamp(1.25rem, 2.5vw, 1.75rem);
+  }
+
+  #assessment .answers {
+    gap: 0.75rem;
+  }
+
+  #assessment .answer-card,
+  #assessment button.answer-card {
+    padding: 0.625rem 1.125rem;
+    gap: 0.75rem;
+    min-height: 3rem;
+  }
+
+  #assessment .assessment-header {
+    scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px));
+  }
+
+  #assessment #screenFooter,
+  #assessment .assessment-footer {
+    scroll-margin-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  #assessment .assessment-shell.assessment-card,
+  #assessment .assessment-shell,
+  #assessment div:has(> #screenBody):has(> #screenFooter):not(.assessment-shell *) {
+    scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px));
+  }
+}
+
+@media (max-width: 767px) {
+  #assessment .option-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #assessment .answers {
+    gap: 0.5rem;
+  }
+
+  #assessment .answer-card,
+  #assessment button.answer-card {
+    padding: 0.4375rem 1rem;
+    gap: 0.625rem;
+    min-height: 2.625rem;
+  }
+
+  #assessment .answer-card strong {
+    line-height: 1.35rem;
+  }
+
+  #assessment .question-kicker {
+    scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px));
+  }
+
+  #assessment #screenFooter,
+  #assessment .assessment-footer {
+    scroll-margin-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  #screenBody {
+    padding-left: 2rem;
+    padding-right: 1.5rem;
+  }
+
+  #screenFooter {
+    padding-left: 2rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (max-width: 479px) {
+  #screenBody {
+    padding-left: 1.75rem;
+    padding-right: 1.25rem;
+  }
+
+  #screenFooter {
+    flex-direction: column-reverse;
+    padding-left: 1.75rem;
+    padding-right: 1.25rem;
+  }
+
+  #assessment #screenFooter .button,
+  #assessment #screenFooter a.button {
+    width: 100%;
+  }
+}
