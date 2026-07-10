@@ -97,7 +97,7 @@
 @media (max-width: 991px) {
   #assessment div:has(> #stepLabel),
   #assessment .step-meta {
-    scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px));
+    scroll-margin-top: calc(7.5rem + env(safe-area-inset-top, 0px));
   }
 }
 
@@ -993,7 +993,7 @@
   }
 
   #assessment .assessment-header {
-    scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px));
+    scroll-margin-top: calc(7.5rem + env(safe-area-inset-top, 0px));
   }
 
   #assessment #screenFooter,
@@ -1004,7 +1004,7 @@
   #assessment .assessment-shell.assessment-card,
   #assessment .assessment-shell,
   #assessment div:has(> #screenBody):has(> #screenFooter):not(.assessment-shell *) {
-    scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px));
+    scroll-margin-top: calc(7.5rem + env(safe-area-inset-top, 0px));
   }
 }
 
@@ -1029,7 +1029,7 @@
   }
 
   #assessment .question-kicker {
-    scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px));
+    scroll-margin-top: calc(6rem + env(safe-area-inset-top, 0px));
   }
 
   #assessment #screenFooter,

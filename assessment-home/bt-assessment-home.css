@@ -458,14 +458,14 @@ main:has(> #assessment) { width: min(var(--bt-container-large), calc(100% - 2rem
   .progress-slot:has(#progressPrompt.is-hidden) { display: none; }
   .answers { gap: 0.75rem; }
   .answer-card { padding: 0.625rem 1.125rem; gap: 0.75rem; min-height: 3rem; }
-  #assessment .assessment-header { scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px)); }
+  #assessment .assessment-header { scroll-margin-top: calc(7.5rem + env(safe-area-inset-top, 0px)); }
   #assessment #screenFooter,
   #assessment .assessment-footer { scroll-margin-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
   #assessment .assessment-shell.assessment-card,
   #assessment .assessment-shell,
   #assessment div:has(> #screenBody):has(> #screenFooter):not(.assessment-shell *),
   #assessment div:has(> #stepLabel) {
-    scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px));
+    scroll-margin-top: calc(7.5rem + env(safe-area-inset-top, 0px));
   }
 }
 @media (min-width: 992px) and (max-width: 1199px) {
@@ -500,6 +500,12 @@ main:has(> #assessment) { width: min(var(--bt-container-large), calc(100% - 2rem
   .answers { gap: 0.5rem; }
   .answer-card { padding: 0.4375rem 1rem; gap: 0.625rem; min-height: 2.625rem; }
   .answer-card strong { line-height: 1.35rem; }
-  #assessment .question-kicker { scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px)); }
+  #assessment .question-kicker { scroll-margin-top: calc(6rem + env(safe-area-inset-top, 0px)); }
+  #assessment .assessment-header,
+  #assessment .assessment-shell.assessment-card,
+  #assessment .assessment-shell,
+  #assessment div:has(> #stepLabel) {
+    scroll-margin-top: calc(6rem + env(safe-area-inset-top, 0px));
+  }
 }
 @media (max-width: 479px) { main:has(> #assessment) { width: min(100% - 1rem, var(--bt-container-large)); padding: 2.5rem 0; } #assessment .assessment-shell, #assessment div:has(> #screenBody):has(> #screenFooter):not(.assessment-shell *), #assessment div:has(> .assessment-card):has(> #screenFooter):not(.assessment-shell *) { border-radius: 0 1.25rem var(--bt-radius-field) 0; } .assessment-header, .assessment-body { padding: 1.25rem; padding-left: 1.75rem; } .assessment-footer { padding: 1rem 1.25rem; padding-left: 1.75rem; } .assessment-footer { flex-direction: column-reverse; } .option-card { grid-template-columns: 1fr; } }

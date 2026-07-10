@@ -246,7 +246,7 @@
     }
   }
   function selectedAnswerForQuestion() { return state.answers[state.topic]?.[state.questionIndex]; }
-  function setAnswer(value) { if (!state.answers[state.topic]) state.answers[state.topic] = {}; state.answers[state.topic][state.questionIndex] = value; if (state.screen === "questions" && isMobileScrollViewport()) pendingScroll = "answer-footer"; render(); }
+  function setAnswer(value) { if (!state.answers[state.topic]) state.answers[state.topic] = {}; state.answers[state.topic][state.questionIndex] = value; render(); }
   function calculateScore() {
     const topic = getTopic();
     const answers = state.answers[state.topic] || {};
@@ -334,7 +334,7 @@
   function renderSelector() {
     state.screen = "selector"; els.finalCta.classList.add("is-hidden"); setStepMeta("Step 1 of 5"); els.screenTitle.textContent = "Where would you like to start?"; els.screenCopy.textContent = "Choose the area you would like to assess. In just a few minutes you’ll receive practical insights and recommended next steps based on your responses."; setSelectorProgress();
     els.body.innerHTML = `<div class="option-grid">${ASSESSMENT.topics.map((topic) => `<button class="option-card ${state.topic === topic.id ? "is-selected" : ""}" type="button" data-topic="${topic.id}"><span class="priority-icon" aria-hidden="true"><img src="${resolveAsset(topic.iconSrc)}" alt="" width="48" height="48" decoding="async"></span><span><strong>${topic.title}</strong><span>${topic.description}</span></span></button>`).join("")}</div><div class="error is-hidden" id="selectorError">Please choose an assessment area before continuing.</div>`;
-    els.body.querySelectorAll("[data-topic]").forEach((button) => button.addEventListener("click", () => { state.topic = button.dataset.topic; if (!state.answers[state.topic]) state.answers[state.topic] = {}; if (isCompactScrollViewport()) pendingScroll = "selector-footer"; render(); }));
+    els.body.querySelectorAll("[data-topic]").forEach((button) => button.addEventListener("click", () => { state.topic = button.dataset.topic; if (!state.answers[state.topic]) state.answers[state.topic] = {}; render(); }));
     els.back.classList.add("is-hidden"); setButtonLabel(els.next, "Start Assessment", true); els.next.disabled = false;
   }
   function renderQuestion() {
@@ -419,15 +419,11 @@
     if (pendingScroll === "question" && state.screen === "questions") {
       pendingScroll = null;
       scrollToQuestionView();
-    } else if (pendingScroll === "answer-footer" && state.screen === "questions") {
-      pendingScroll = null;
-      scrollToQuestionFooter();
-    } else if (pendingScroll === "selector-footer" && state.screen === "selector") {
-      pendingScroll = null;
-      scrollToAssessmentFooter();
     } else if (pendingScroll === "step" && (state.screen === "result" || state.screen === "recommendations" || state.screen === "cta" || state.screen === "selector")) {
       pendingScroll = null;
       scrollToAssessmentStep();
+    } else {
+      pendingScroll = null;
     }
   }
   function showError(id) { const error = document.getElementById(id); if (error) error.classList.remove("is-hidden"); }
@@ -435,21 +431,25 @@
   let pendingScroll = null;
   function isMobileScrollViewport() { return window.matchMedia("(max-width: 767px)").matches; }
   function isCompactScrollViewport() { return window.matchMedia("(max-width: 991px)").matches; }
+  function getStickyHeaderFallback() { return isMobileScrollViewport() ? 88 : 114; }
   function getStickyHeaderOffset() {
-    const selectors = [".w-nav", '[class*="navbar"]', "header.w-nav", ".navbar5_component"];
+    const selectors = [".navbar-ext.w-nav", ".navbar.w-nav", "header.w-nav", ".w-nav", ".navbar5_component"];
     let offset = 0;
+    const seen = new Set();
     selectors.forEach((selector) => {
       document.querySelectorAll(selector).forEach((element) => {
+        if (seen.has(element)) return;
+        seen.add(element);
         const style = window.getComputedStyle(element);
         if (style.position !== "fixed" && style.position !== "sticky") return;
         const rect = element.getBoundingClientRect();
         if (rect.height <= 0) return;
-        if (style.position === "fixed" || rect.top <= 0) {
+        if (style.position === "fixed" || rect.top <= 12) {
           offset = Math.max(offset, rect.bottom);
         }
       });
     });
-    return offset > 0 ? offset + 16 : 80;
+    return (offset > 0 ? offset : getStickyHeaderFallback()) + 20;
   }
   function scrollIntoAssessmentTarget(target, options = { behavior: "smooth", block: "start" }) {
     if (!target) return;
@@ -464,32 +464,25 @@
       });
     });
   }
-  function scrollToQuestionView() {
-    if (!isMobileScrollViewport()) return;
-    const target = els.body?.querySelector(".question-kicker") || els.body?.querySelector(".question-title");
-    scrollIntoAssessmentTarget(target);
-  }
-  function scrollToQuestionFooter() {
-    if (!isMobileScrollViewport()) return;
-    scrollToAssessmentFooter();
-  }
-  function scrollToAssessmentFooter() {
-    if (!isCompactScrollViewport()) return;
-    const target = document.getElementById("screenFooter")
-      || document.querySelector("#assessment .assessment-footer")
-      || document.getElementById("nextBtn");
-    scrollIntoAssessmentTarget(target, { behavior: "smooth", block: "end" });
-  }
-  function scrollToAssessmentStep() {
-    if (!isCompactScrollViewport()) return;
-    const target = document.querySelector("#assessment .step-meta")
-      || document.querySelector("#assessment div:has(> #stepLabel)")
-      || document.querySelector("#assessment .assessment-shell.assessment-card")
-      || document.querySelector("#assessment .assessment-shell")
-      || document.querySelector("#assessment div:has(> #screenBody):has(> #screenFooter):not(.assessment-shell *)")
+  function getAssessmentScrollRoot() {
+    return document.querySelector("#assessment .assessment-shell")
+      || document.querySelector("#assessment .assessment-card")
       || document.querySelector("#assessment .assessment-header")
       || document.querySelector("#assessment div:has(> #screenTitle)")
       || document.getElementById("assessment");
+  }
+  function scrollToQuestionView() {
+    if (!isMobileScrollViewport()) return;
+    const target = els.body?.querySelector(".question-kicker")
+      || els.body?.querySelector(".question-title")
+      || getAssessmentScrollRoot();
+    scrollIntoAssessmentTarget(target);
+  }
+  function scrollToAssessmentStep() {
+    if (!isCompactScrollViewport()) return;
+    const target = getAssessmentScrollRoot()
+      || document.querySelector("#assessment .step-meta")
+      || document.querySelector("#assessment div:has(> #stepLabel)");
     scrollIntoAssessmentTarget(target);
   }
 

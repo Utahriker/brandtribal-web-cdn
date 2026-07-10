@@ -476,7 +476,6 @@ function selectedAnswerForQuestion() {
 function setAnswer(value) {
   if (!state.data.answers[state.topic]) state.data.answers[state.topic] = {};
   state.data.answers[state.topic][state.questionIndex] = value;
-  if (state.screen === "questions" && isMobileScrollViewport()) pendingScroll = "answer-footer";
   saveProgress();
   render();
 }
@@ -1410,23 +1409,38 @@ function isCompactScrollViewport() {
   return window.matchMedia("(max-width: 991px)").matches;
 }
 
+function getStickyHeaderFallback() {
+  return isMobileScrollViewport() ? 88 : 114;
+}
+
 function getStickyHeaderOffset() {
-  const selectors = [".w-nav", '[class*="navbar"]', "header.w-nav", ".navbar5_component"];
+  const selectors = [
+    ".navbar-ext.w-nav",
+    ".navbar.w-nav",
+    "header.w-nav",
+    ".w-nav",
+    ".navbar5_component"
+  ];
   let offset = 0;
+  const seen = new Set();
 
   selectors.forEach((selector) => {
     document.querySelectorAll(selector).forEach((element) => {
+      if (seen.has(element)) return;
+      seen.add(element);
       const style = window.getComputedStyle(element);
       if (style.position !== "fixed" && style.position !== "sticky") return;
       const rect = element.getBoundingClientRect();
       if (rect.height <= 0) return;
-      if (style.position === "fixed" || rect.top <= 0) {
+      // Sticky nav may sit a few px below 0 while settling; still count it when near the top.
+      if (style.position === "fixed" || rect.top <= 12) {
         offset = Math.max(offset, rect.bottom);
       }
     });
   });
 
-  return offset > 0 ? offset + 16 : 80;
+  const buffer = 20;
+  return (offset > 0 ? offset : getStickyHeaderFallback()) + buffer;
 }
 
 function scrollIntoAssessmentTarget(target, options = { behavior: "smooth", block: "start" }) {
@@ -1443,33 +1457,26 @@ function scrollIntoAssessmentTarget(target, options = { behavior: "smooth", bloc
   });
 }
 
+function getAssessmentScrollRoot() {
+  return document.querySelector("#assessment .assessment-shell")
+    || document.querySelector("#assessment .assessment-card")
+    || document.querySelector("#assessment .assessment-header")
+    || document.getElementById("assessment");
+}
+
 function scrollToQuestionView() {
   if (!isMobileScrollViewport()) return;
-  const target = els.body?.querySelector(".question-kicker") || els.body?.querySelector(".question-title");
+  const target = els.body?.querySelector(".question-kicker")
+    || els.body?.querySelector(".question-title")
+    || getAssessmentScrollRoot();
   scrollIntoAssessmentTarget(target);
-}
-
-function scrollToQuestionFooter() {
-  if (!isMobileScrollViewport()) return;
-  scrollToAssessmentFooter();
-}
-
-function scrollToAssessmentFooter() {
-  if (!isMobileScrollViewport()) return;
-  const target = document.getElementById("screenFooter")
-    || document.querySelector("#assessment .assessment-footer")
-    || document.getElementById("nextBtn");
-  scrollIntoAssessmentTarget(target, { behavior: "smooth", block: "end" });
 }
 
 function scrollToAssessmentStep() {
   if (!isCompactScrollViewport()) return;
-  const target = document.querySelector("#assessment .step-meta")
-    || document.querySelector("#assessment div:has(> #stepLabel)")
-    || document.querySelector("#assessment .assessment-header")
-    || document.querySelector("#assessment .assessment-card")
-    || document.querySelector("#assessment .assessment-shell")
-    || document.getElementById("assessment");
+  const target = getAssessmentScrollRoot()
+    || document.querySelector("#assessment .step-meta")
+    || document.querySelector("#assessment div:has(> #stepLabel)");
   scrollIntoAssessmentTarget(target);
 }
 
@@ -1515,13 +1522,6 @@ function applyPendingScroll() {
     }
     pendingScroll = null;
     scrollToQuestionView();
-  } else if (pendingScroll === "answer-footer" && state.screen === "questions") {
-    if (!isMobileScrollViewport()) {
-      pendingScroll = null;
-      return;
-    }
-    pendingScroll = null;
-    scrollToQuestionFooter();
   } else if (pendingScroll === "step") {
     if (!isCompactScrollViewport()) {
       pendingScroll = null;
@@ -1532,6 +1532,8 @@ function applyPendingScroll() {
       pendingScroll = null;
       scrollToAssessmentStep();
     }
+  } else {
+    pendingScroll = null;
   }
 }
 

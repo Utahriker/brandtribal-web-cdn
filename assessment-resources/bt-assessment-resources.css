@@ -1159,13 +1159,13 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
   .hub-grid, .topic-complete-grid, .analysis-summary, .results-primary-grid, .delivery-panel-inner, .footer-cta { grid-template-columns: minmax(0, 1fr); }
   .answers { gap: 0.75rem; }
   .answer-card { padding: 0.625rem 1.125rem; gap: 0.75rem; min-height: 3rem; }
-  #assessment .assessment-header { scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px)); }
+  #assessment .assessment-header { scroll-margin-top: calc(7.5rem + env(safe-area-inset-top, 0px)); }
   #assessment #screenFooter,
   #assessment .assessment-footer { scroll-margin-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); }
   #assessment .assessment-card,
   #assessment .assessment-shell,
   #assessment div:has(> #stepLabel) {
-    scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px));
+    scroll-margin-top: calc(7.5rem + env(safe-area-inset-top, 0px));
   }
   .option-grid, .insight-grid { grid-template-columns: 1fr; }
   .tab-bar {
@@ -1427,7 +1427,13 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
   .answers { gap: 0.625rem; }
   .answer-card { padding: 0.4375rem 1rem; gap: 0.625rem; min-height: 2.625rem; }
   .answer-card strong { line-height: 1.35rem; }
-  #assessment .question-kicker { scroll-margin-top: calc(5rem + env(safe-area-inset-top, 0px)); }
+  #assessment .question-kicker { scroll-margin-top: calc(6rem + env(safe-area-inset-top, 0px)); }
+  #assessment .assessment-header,
+  #assessment .assessment-card,
+  #assessment .assessment-shell,
+  #assessment div:has(> #stepLabel) {
+    scroll-margin-top: calc(6rem + env(safe-area-inset-top, 0px));
+  }
   .assessment-header, .assessment-body, .assessment-footer { padding: 1.5rem; }
   .assessment-footer.is-cta { padding: 1.5rem; }
   .delivery-panel-inner { padding: 1.5rem; }
