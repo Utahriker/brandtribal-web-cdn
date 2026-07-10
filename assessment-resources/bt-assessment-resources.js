@@ -773,6 +773,71 @@ function animateScoreRing(score, ringId = "scoreRing") {
   });
 }
 
+let scoreRowsAnimToken = 0;
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function animateScoreRows() {
+  const rows = [...els.body.querySelectorAll(".score-row[data-score]")];
+  if (!rows.length) return;
+
+  const token = ++scoreRowsAnimToken;
+  const duration = 600;
+  const reduced = prefersReducedMotion();
+
+  const applyFinal = () => {
+    rows.forEach((row) => {
+      const target = Number(row.dataset.score) || 0;
+      const valueEl = row.querySelector(".score-row-value");
+      const fill = row.querySelector(".score-bar i");
+      if (valueEl) valueEl.textContent = `${target}/100`;
+      if (fill) fill.style.width = `${target}%`;
+    });
+  };
+
+  if (reduced) {
+    applyFinal();
+    return;
+  }
+
+  rows.forEach((row) => {
+    const valueEl = row.querySelector(".score-row-value");
+    const fill = row.querySelector(".score-bar i");
+    if (valueEl) valueEl.textContent = "0/100";
+    if (fill) fill.style.width = "0%";
+  });
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (token !== scoreRowsAnimToken) return;
+      const start = performance.now();
+
+      rows.forEach((row) => {
+        const target = Number(row.dataset.score) || 0;
+        const fill = row.querySelector(".score-bar i");
+        if (fill) fill.style.width = `${target}%`;
+      });
+
+      const tick = (now) => {
+        if (token !== scoreRowsAnimToken) return;
+        const t = Math.min(1, (now - start) / duration);
+        const eased = 1 - (1 - t) ** 3;
+        rows.forEach((row) => {
+          const target = Number(row.dataset.score) || 0;
+          const valueEl = row.querySelector(".score-row-value");
+          if (valueEl) valueEl.textContent = `${Math.round(target * eased)}/100`;
+        });
+        if (t < 1) requestAnimationFrame(tick);
+        else applyFinal();
+      };
+
+      requestAnimationFrame(tick);
+    });
+  });
+}
+
 function hubDots(topicId) {
   const topic = ASSESSMENT.topics.find((item) => item.id === topicId);
   const total = topic ? topic.questions.length : 6;
@@ -1087,10 +1152,10 @@ function renderResultsPanel(topicId) {
             <h3>Your scores</h3>
             <div class="score-list">
               ${dims.map((item) => `
-                <div class="score-row">
+                <div class="score-row" data-score="${item.score}">
                   <span class="score-row-label"><span class="score-dot" style="background:var(--bt-dimension-${item.color})"></span>${item.label}</span>
-                  <strong class="score-row-value">${item.score}/100</strong>
-                  <div class="score-bar score-bar--${item.color}"><i style="width:${item.score}%"></i></div>
+                  <strong class="score-row-value">0/100</strong>
+                  <div class="score-bar score-bar--${item.color}"><i style="width:0%"></i></div>
                 </div>`).join("")}
             </div>
           </section>
@@ -1182,6 +1247,7 @@ function renderComprehensive() {
   }
 
   animateScoreRing(state.data.scores[state.activeTab] ?? calculateScore(state.activeTab), "analysisSummaryRing");
+  animateScoreRows();
 
   els.footer.classList.remove("is-hidden");
   configureComprehensiveFooter();
