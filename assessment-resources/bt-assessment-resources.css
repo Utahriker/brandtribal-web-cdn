@@ -1172,10 +1172,13 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
     flex-wrap: nowrap;
     align-items: flex-end;
     overflow-x: auto;
+    overflow-y: hidden; /* overflow-x:auto alone promotes overflow-y to auto — blocks tiny vertical scroll/clip */
     overscroll-behavior-x: contain;
+    overscroll-behavior-y: none;
+    touch-action: pan-x;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    padding: 0 1.35rem 0;
+    padding: 2px 1.35rem 0; /* keep top tab stroke inside the scrollport */
   }
   .tab-btn {
     flex: 0 0 auto;
