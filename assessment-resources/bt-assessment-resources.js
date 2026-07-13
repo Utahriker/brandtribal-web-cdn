@@ -2222,7 +2222,16 @@ function placePassOnPanel(passOnState) {
   if (!target) return;
   if (els.passOn.parentElement !== target) target.appendChild(els.passOn);
   els.passOn.classList.toggle("is-comprehensive", useComprehensive);
-  if (els.passOnComprehensive) els.passOnComprehensive.hidden = !useComprehensive;
+
+  const showComprehensive = useComprehensive && passOnState.showPanel;
+  if (els.passOnComprehensive) {
+    els.passOnComprehensive.hidden = !showComprehensive;
+    els.passOnComprehensive.style.display = showComprehensive ? "" : "none";
+  }
+  if (els.passOnInline) {
+    els.passOnInline.hidden = true;
+    els.passOnInline.style.display = "none";
+  }
 }
 
 function setPassOnFeedback(message, { hidden = false } = {}) {
@@ -2241,7 +2250,10 @@ function updatePassOnPanel(snapshot) {
 
   const passOnState = passItOnState(snapshot);
   placePassOnPanel(passOnState);
-  if (els.passOn) els.passOn.hidden = !passOnState.showPanel;
+  if (els.passOn) {
+    els.passOn.hidden = !passOnState.showPanel;
+    els.passOn.style.display = passOnState.showPanel ? "" : "none";
+  }
 
   syncPassOnCopy("Finished reviewing? Share your results or invite someone else to take the health check.");
   syncPassOnButtonStates(passOnState);
@@ -2655,16 +2667,35 @@ function ensureWebflowPanelChrome() {
 }
 
 function ensurePassOnChrome() {
-  const linkedInIcon = "https://utahriker.github.io/brandtribal-web-cdn/assessment-resources/linkedin-in.png?v=20260713.passon4";
+  const linkedInIcon = "https://utahriker.github.io/brandtribal-web-cdn/assessment-resources/linkedin-in.png?v=20260713.passon5";
 
-  if (els.passOnInline) {
-    els.passOnInline.hidden = true;
-    els.passOnInline.style.display = "none";
+  const stashIds = [
+    ["previewPassOnInline", "preview-pass-on-inline"],
+    ["previewPassOnSummaryTemplate", ""]
+  ];
+  stashIds.forEach(([id, className]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.hidden = true;
+    el.style.display = "none";
+    if (className) el.classList.add(className);
+  });
+
+  const passOn = document.getElementById("previewPassOn");
+  if (passOn) {
+    passOn.classList.add("preview-pass-on");
+    passOn.querySelectorAll("[data-pass-on-action]").forEach((btn) => {
+      btn.classList.add("preview-pass-on-btn");
+      if (btn.dataset.passOnAction === "linkedin") btn.classList.add("is-linkedin");
+    });
+    passOn.querySelectorAll(".preview-pass-on-btn-icon, [aria-hidden='true']").forEach((icon) => {
+      if (icon.closest("[data-pass-on-action='linkedin']")) icon.classList.add("preview-pass-on-btn-icon", "preview-pass-on-btn-icon--linkedin");
+      else if (icon.closest("[data-pass-on-action]")) icon.classList.add("preview-pass-on-btn-icon");
+    });
   }
-  if (els.passOnSummaryTemplate) {
-    els.passOnSummaryTemplate.hidden = true;
-    els.passOnSummaryTemplate.style.display = "none";
-  }
+
+  const compSlot = document.getElementById("previewPassOnComprehensive");
+  if (compSlot) compSlot.classList.add("preview-pass-on-comprehensive");
 
   document.querySelectorAll("#assessment [data-pass-on-action]").forEach((node) => {
     if (node.tagName === "A") {
