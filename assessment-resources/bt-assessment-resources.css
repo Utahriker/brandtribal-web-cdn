@@ -310,7 +310,7 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
 .hub-card.is-complete {
   grid-template-columns: 1fr; padding: 1.5rem; min-height: 11rem;
   border-color: color-mix(in srgb, var(--bt-cerise) 50%, var(--bt-white));
-  background: var(--bt-cerise-05);
+  background: var(--bt-white);
   box-shadow: var(--bt-shadow-offset-subtle);
 }
 .hub-card.is-complete:hover { border-color: var(--bt-cerise); }
