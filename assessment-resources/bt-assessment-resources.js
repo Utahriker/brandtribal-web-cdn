@@ -1729,7 +1729,13 @@ function renderTopicOutcome(mode) {
 }
 
 function bindTopicOutcomeEvents() {
-  els.body.querySelector("[data-retake-topic]")?.addEventListener("click", () => retakeTopic());
+  els.body.querySelector("[data-retake-topic]")?.addEventListener("click", () => {
+    if (isMarketingMode()) {
+      openTopicForRetake(state.topic);
+      return;
+    }
+    retakeTopic();
+  });
   els.body.querySelector("[data-continue-next]")?.addEventListener("click", () => {
     if (allComplete()) {
       if (isMarketingMode()) enterOverallAssessment();
@@ -1758,6 +1764,7 @@ function bindTopicOutcomeEvents() {
 
 function retakeTopic(topicId = state.topic) {
   if (isSharedMode()) return;
+  if (topicId && typeof topicId === "object") topicId = state.topic;
   const id = topicId || state.topic;
   if (!id || !getTopic(id)) return false;
   if (state.data.scores[id]) recordTopicScoreHistory(id, state.data.scores[id]);
