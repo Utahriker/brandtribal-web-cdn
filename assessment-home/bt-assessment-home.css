@@ -63,7 +63,8 @@
   font-family: "Cairo", Arial, sans-serif;
   color: var(--bt-iron);
   line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
 }
 /* Exclude site .button links — #assessment a beats .button on specificity */
 #assessment a:not(.button):not(.w-button) { color: inherit; }

@@ -2,6 +2,14 @@
  * Webflow bridge — styles flattened DOM when shell classes are stripped.
  * Load after assessment.css on Webflow pages only.
  */
+
+/* Match brandtribal.com.au — assessment.css must not thin site-wide Cairo */
+body,
+body * {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
 #assessment {
   display: grid;
   gap: clamp(2rem, 4vw, 3.5rem);

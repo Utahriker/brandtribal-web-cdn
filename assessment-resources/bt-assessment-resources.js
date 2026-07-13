@@ -1,8 +1,29 @@
-const STORAGE_KEY = "brandtribalResourcesHealthCheck";
-const SESSION_KEY = "brandtribalResourcesHealthCheckSession";
+const DEFAULT_STORAGE_KEY = "brandtribalResourcesHealthCheck";
+const DEFAULT_SESSION_KEY = "brandtribalResourcesHealthCheckSession";
 const SHARE_SCORE_VALUES = [100, 75, 50, 25, 40];
 const SHARE_VERSION = "1";
 const BHC_PAGE_PATH = "/business-health-check";
+const DEFAULT_MARKETING_TOPIC_ORDER = ["brand", "customer", "website", "readiness"];
+
+function getAssessmentConfig() {
+  return window.BTAssessmentConfig || {};
+}
+
+function isMarketingMode() {
+  return getAssessmentConfig().mode === "marketing";
+}
+
+function getStorageKey() {
+  const cfg = getAssessmentConfig();
+  if (isMarketingMode()) return cfg.storageKey || "brandtribalMarketingHealthCheck";
+  return cfg.storageKey || DEFAULT_STORAGE_KEY;
+}
+
+function getSessionKey() {
+  const cfg = getAssessmentConfig();
+  if (isMarketingMode()) return cfg.sessionKey || "brandtribalMarketingHealthCheckSession";
+  return cfg.sessionKey || DEFAULT_SESSION_KEY;
+}
 
 const BRAND_ICON_ASSETS = {
   "icons/Online-Digital.svg": "https://cdn.prod.website-files.com/652a4aa287d36e6c66430b76/69e6bd8452226fee0ee2a1bc_Online-Digital.svg",
@@ -160,11 +181,11 @@ const ASSESSMENT = {
     }
   ],
   answers: [
-    { label: "Yes, definitely", score: 100 },
-    { label: "Mostly", score: 75 },
-    { label: "Somewhat", score: 50 },
-    { label: "Not yet", score: 25 },
-    { label: "I'm not sure", score: 40 }
+    { label: "Yes, definitely", score: 100, clarification: "This is consistently in place." },
+    { label: "Mostly", score: 75, clarification: "This is working, with some room to improve." },
+    { label: "Somewhat", score: 50, clarification: "Some elements are in place, but it is inconsistent." },
+    { label: "Not yet", score: 25, clarification: "This is not currently in place." },
+    { label: "I'm not sure", score: 40, clarification: "I don't have enough information to assess this." }
   ]
 };
 
@@ -177,6 +198,8 @@ const state = {
   questionIndex: 0,
   activeTab: "website",
   resetTabBarOnNextRender: false,
+  /** When set, completed topic is shown with blank radios; scores stay until first new answer. */
+  retakeHold: null,
   data: loadProgress()
 };
 
@@ -184,6 +207,96 @@ function isSharedMode() {
   return state.mode === "shared";
 }
 
+function orderedTopics() {
+  const cfg = getAssessmentConfig();
+  const order = (isMarketingMode() && Array.isArray(cfg.topicOrder) && cfg.topicOrder.length)
+    ? cfg.topicOrder
+    : (isMarketingMode() ? DEFAULT_MARKETING_TOPIC_ORDER : ASSESSMENT.topics.map((topic) => topic.id));
+  return order.map((id) => ASSESSMENT.topics.find((topic) => topic.id === id)).filter(Boolean);
+}
+
+function marketingStartTopicId() {
+  const cfg = getAssessmentConfig();
+  return cfg.startTopic || orderedTopics()[0]?.id || "brand";
+}
+
+function firstIncompleteTopicId() {
+  const incomplete = orderedTopics().find((topic) => !state.data.completed[topic.id]);
+  return incomplete?.id || null;
+}
+
+function nextTopicAfter(topicId) {
+  const topics = orderedTopics();
+  const index = topics.findIndex((topic) => topic.id === topicId);
+  if (index < 0) return null;
+  return topics[index + 1] || null;
+}
+
+function canAccessTopic(topicId) {
+  if (!topicId || isSharedMode()) return false;
+  if (!isMarketingMode()) return true;
+  return Boolean(getTopic(topicId));
+}
+
+function emitAssessmentChange(reason = "update") {
+  const snapshot = getSnapshot();
+  const detail = { reason, snapshot };
+  window.dispatchEvent(new CustomEvent("bt-assessment:change", { detail }));
+  const cfg = getAssessmentConfig();
+  if (typeof cfg.onChange === "function") cfg.onChange(snapshot, reason);
+}
+
+function getSnapshot() {
+  const order = orderedTopics();
+  const frontierId = firstIncompleteTopicId();
+  const topics = order.map((topic) => {
+    const answers = state.data.answers[topic.id] || {};
+    const answered = topic.questions.reduce((count, _, index) => (
+      answers[index] === undefined || answers[index] === null ? count : count + 1
+    ), 0);
+    const completed = Boolean(state.data.completed[topic.id]);
+    let status = "not-started";
+    if (completed) status = "completed";
+    else if (state.topic === topic.id && (state.screen === "questions" || state.screen === "marketing-confirm")) status = "in-progress";
+    else if (answered > 0) status = "in-progress";
+    else if (topic.id === frontierId) status = "up-next";
+    return {
+      id: topic.id,
+      title: topic.title,
+      shortTitle: topic.shortTitle,
+      description: topic.description,
+      status,
+      completed,
+      score: completed ? (state.data.scores[topic.id] ?? null) : null,
+      answered,
+      questionTotal: topic.questions.length,
+      accessible: canAccessTopic(topic.id)
+    };
+  });
+
+  return {
+    mode: isMarketingMode() ? "marketing" : (isSharedMode() ? "shared" : "resources"),
+    screen: state.screen,
+    topic: state.topic,
+    questionIndex: state.questionIndex,
+    activeTab: state.activeTab,
+    retakeHold: state.retakeHold,
+    completedCount: completedCount(),
+    allComplete: allComplete(),
+    overallAverage: allComplete() ? overallAverage() : null,
+    hasAnswers: Object.values(state.data.answers || {}).some((topicAnswers) => (
+      topicAnswers && Object.keys(topicAnswers).length > 0
+    )),
+    topics,
+    data: {
+      completed: { ...state.data.completed },
+      scores: { ...state.data.scores },
+      answers: JSON.parse(JSON.stringify(state.data.answers || {}))
+    }
+  };
+}
+
+let marketingAdvanceTimer = null;
 let els = {};
 let eventsBound = false;
 
@@ -220,7 +333,7 @@ function getElements() {
 
 function loadProgress() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const saved = JSON.parse(localStorage.getItem(getStorageKey()));
     return {
       ...defaultProgress,
       ...saved,
@@ -236,18 +349,59 @@ function loadProgress() {
 
 function saveSession() {
   if (isSharedMode()) return;
-  localStorage.setItem(SESSION_KEY, JSON.stringify({
+  localStorage.setItem(getSessionKey(), JSON.stringify({
     screen: state.screen,
     topic: state.topic,
     questionIndex: state.questionIndex,
-    activeTab: state.activeTab
+    activeTab: state.activeTab,
+    retakeHold: state.retakeHold
   }));
 }
 
 function restoreSession() {
   if (isSharedMode()) return;
   try {
-    const session = JSON.parse(localStorage.getItem(SESSION_KEY));
+    const session = JSON.parse(localStorage.getItem(getSessionKey()));
+
+    if (isMarketingMode()) {
+      if (allComplete()) {
+        state.activeTab = (session?.activeTab && getTopic(session.activeTab)?.id)
+          || weakestTopic()?.id
+          || orderedTopics()[0]?.id
+          || ASSESSMENT.topics[0].id;
+        if (session?.screen === "comprehensive") {
+          state.screen = "comprehensive";
+          state.resetTabBarOnNextRender = true;
+        } else {
+          state.screen = "overall";
+          state.topic = null;
+        }
+        return;
+      }
+      if (session?.screen === "topic-complete" && session.topic && state.data.completed[session.topic]) {
+        state.screen = "topic-complete";
+        state.topic = session.topic;
+        return;
+      }
+      if (session?.screen === "questions" && session.topic && canAccessTopic(session.topic)) {
+        state.screen = "questions";
+        state.topic = session.topic;
+        state.questionIndex = Number.isInteger(session.questionIndex)
+          ? session.questionIndex
+          : firstUnansweredQuestionIndex(session.topic);
+        if (session.retakeHold && state.data.completed[session.retakeHold]) {
+          state.retakeHold = session.retakeHold;
+          state.questionIndex = 0;
+        }
+        return;
+      }
+      const resumeId = firstIncompleteTopicId() || marketingStartTopicId();
+      state.screen = "questions";
+      state.topic = resumeId;
+      state.questionIndex = firstUnansweredQuestionIndex(resumeId);
+      return;
+    }
+
     if (!session?.screen) return;
 
     if (session.screen === "comprehensive" && allComplete()) {
@@ -267,13 +421,17 @@ function restoreSession() {
     state.screen = "hub";
     state.topic = null;
   } catch {
-    state.screen = "hub";
+    state.screen = isMarketingMode() ? "questions" : "hub";
+    if (isMarketingMode()) {
+      state.topic = marketingStartTopicId();
+      state.questionIndex = 0;
+    }
   }
 }
 
 function saveProgress() {
   if (isSharedMode()) return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+  localStorage.setItem(getStorageKey(), JSON.stringify(state.data));
   saveSession();
 }
 
@@ -395,10 +553,87 @@ function configureComprehensiveFooter() {
   if (els.footerCtaAudit) els.footerCtaAudit.href = auditUrlWithContext();
 }
 
+function clearMarketingAdvanceTimer() {
+  if (marketingAdvanceTimer) {
+    clearTimeout(marketingAdvanceTimer);
+    marketingAdvanceTimer = null;
+  }
+}
+
+function startTopic(topicId, options = {}) {
+  if (!canAccessTopic(topicId)) return false;
+  clearMarketingAdvanceTimer();
+  if (state.retakeHold && state.retakeHold !== topicId) state.retakeHold = null;
+  state.topic = topicId;
+  state.questionIndex = options.questionIndex ?? (
+    state.data.completed[topicId] ? 0 : firstUnansweredQuestionIndex(topicId)
+  );
+  state.screen = "questions";
+  if (isCompactScrollViewport()) pendingScroll = "step";
+  render();
+  emitAssessmentChange(options.reason || "start-topic");
+  return true;
+}
+
+function reviewTopic(topicId) {
+  if (isSharedMode() || !getTopic(topicId)) return false;
+  if (!isMarketingMode() && !state.data.completed[topicId] && firstIncompleteTopicId() !== topicId) return false;
+  return startTopic(topicId, { questionIndex: 0, reason: "review-topic" });
+}
+
+/** Open a completed topic with blank radios; keep right-panel score until first new answer. */
+function openTopicForRetake(topicId) {
+  if (isSharedMode()) return false;
+  if (!getTopic(topicId)) return false;
+  if (!state.data.completed[topicId]) {
+    return startTopic(topicId, { reason: "start-topic" });
+  }
+  clearMarketingAdvanceTimer();
+  state.topic = topicId;
+  state.questionIndex = 0;
+  state.retakeHold = topicId;
+  state.screen = "questions";
+  if (isCompactScrollViewport()) pendingScroll = "step";
+  render();
+  emitAssessmentChange("retake-hold");
+  return true;
+}
+
+function goToNextTopic() {
+  const next = orderedTopics().find((topic) => !state.data.completed[topic.id]);
+  if (!next) {
+    if (isMarketingMode()) enterOverallAssessment();
+    else enterComprehensiveAnalysis();
+    return true;
+  }
+  return startTopic(next.id, { reason: "auto-advance" });
+}
+
+function renderMarketingConfirm() {
+  const topic = getTopic(state.topic);
+  const score = state.data.scores[topic.id] ?? calculateScore(topic.id);
+  const next = nextTopicAfter(topic.id);
+  els.stepLabel.textContent = "Area complete";
+  els.topicLabel.textContent = `${completedCount()} of 4 areas complete`;
+  els.screenTitle.textContent = `${topic.title} complete`;
+  els.screenCopy.textContent = next
+    ? `Score saved at ${score}%. Continuing to ${next.title}…`
+    : `Score saved at ${score}%. Preparing your comprehensive analysis…`;
+  setProgress(overallProgressPercent());
+  els.body.innerHTML = `
+    <div class="marketing-confirm" role="status">
+      <div class="marketing-confirm-score">${score}%</div>
+      <p><strong>${topic.title}</strong> is complete.</p>
+      <p class="marketing-confirm-next">${next ? `Next up: ${next.title}` : "All areas complete"}</p>
+    </div>`;
+  hideFooter();
+}
+
 function configureQuestionFooter() {
   configureStandardFooter();
   els.back.classList.add("is-hidden");
-  els.hub.classList.remove("is-hidden");
+  if (isMarketingMode()) els.hub.classList.add("is-hidden");
+  else els.hub.classList.remove("is-hidden");
   if (state.questionIndex > 0) els.previous.classList.remove("is-hidden");
   else els.previous.classList.add("is-hidden");
 }
@@ -418,12 +653,19 @@ function hideFooter() {
   configureStandardFooter();
 }
 
-function enterComprehensiveAnalysis() {
-  state.activeTab = ASSESSMENT.topics[0].id;
-  state.resetTabBarOnNextRender = true;
+function enterComprehensiveAnalysis(options = {}) {
+  clearMarketingAdvanceTimer();
+  // Marketing: full analysis stays locked until all four areas are complete.
+  if (isMarketingMode() && !allComplete()) return;
+  const preferredTab = options.tab || options.topicId;
+  state.activeTab = (preferredTab && getTopic(preferredTab)?.id)
+    || (typeof weakestTopic === "function" && weakestTopic()?.id)
+    || ASSESSMENT.topics[0].id;
+  state.resetTabBarOnNextRender = !preferredTab;
   state.screen = "comprehensive";
   if (isCompactScrollViewport()) pendingScroll = "step";
   render();
+  emitAssessmentChange("comprehensive");
 }
 
 function getTopic(id = state.topic) {
@@ -474,10 +716,22 @@ function selectedAnswerForQuestion() {
 }
 
 function setAnswer(value) {
+  if (isMarketingMode() && state.retakeHold === state.topic) {
+    if (state.data.scores[state.topic]) {
+      recordTopicScoreHistory(state.topic, state.data.scores[state.topic]);
+    }
+    state.data.answers[state.topic] = {};
+    delete state.data.scores[state.topic];
+    state.data.completed[state.topic] = false;
+    state.retakeHold = null;
+  }
+
   if (!state.data.answers[state.topic]) state.data.answers[state.topic] = {};
   state.data.answers[state.topic][state.questionIndex] = value;
+
   saveProgress();
   render();
+  emitAssessmentChange("answer");
 }
 
 function calculateScore(topicId = state.topic) {
@@ -689,10 +943,41 @@ function getRankedRecommendationItems(topic, topicAnswers) {
   });
   return [...grouped.values()]
     .sort((a, b) => a.score - b.score || a.questionIndex - b.questionIndex || a.recommendationIndex - b.recommendationIndex)
-    .map((item) => ({
-      recommendationIndex: item.recommendationIndex,
-      recommendation: topic.recommendations[item.recommendationIndex]
-    }));
+    .map((item) => {
+      const answer = ASSESSMENT.answers.find((option) => option.score === item.score) || null;
+      return {
+        recommendationIndex: item.recommendationIndex,
+        recommendation: topic.recommendations[item.recommendationIndex],
+        score: item.score,
+        questionIndex: item.questionIndex,
+        dimension: topic.dimensions[item.questionIndex] || topic.title,
+        question: topic.questions[item.questionIndex] || null,
+        answer
+      };
+    });
+}
+
+function buildMeaningInsight(item) {
+  const dimension = item.dimension || "This area";
+  const label = item.answer?.label || "";
+  const score = item.score;
+  const recTitle = item.recommendation?.[0] || "this focus";
+  const answered = label ? ` — you answered <strong>${label}</strong>` : "";
+
+  let reading;
+  if (score <= 25) {
+    reading = `<strong>${dimension}</strong> is a clear gap${answered}. That usually means people cannot rely on a consistent experience here, so trust and next steps get harder than they need to be.`;
+  } else if (score <= 40) {
+    reading = `<strong>${dimension}</strong> is hard to judge from the inside${answered}. Uncertainty here often shows up as an uneven customer experience even when the intent feels clear to the team.`;
+  } else if (score <= 50) {
+    reading = `<strong>${dimension}</strong> is only partly working${answered}. Some pieces may be in place, but inconsistency still creates hesitation when people compare touchpoints or decide what to do next.`;
+  } else if (score <= 75) {
+    reading = `<strong>${dimension}</strong> is close, but not fully reliable${answered}. Gaps at this level tend to show up as friction rather than outright confusion, and they compound if left alone.`;
+  } else {
+    reading = `<strong>${dimension}</strong> looks comparatively strong${answered}. Use it as a reference for how the weaker areas should feel.`;
+  }
+
+  return `${reading} That reading is why <strong>${recTitle}</strong> sits behind the actions below.`;
 }
 
 function strongestAndWeakest(topicId) {
@@ -721,24 +1006,333 @@ function renderAnalysisSummaryHandoff(activeTopicId) {
   return `Your lowest-scoring area is <strong>${weakest.shortTitle}</strong>. Start there, or continue exploring other topics below.`;
 }
 
+function topicsByAscendingScore() {
+  return [...orderedTopics()].sort((a, b) => {
+    const scoreDiff = (state.data.scores[a.id] || 0) - (state.data.scores[b.id] || 0);
+    if (scoreDiff !== 0) return scoreDiff;
+    return orderedTopics().findIndex((topic) => topic.id === a.id)
+      - orderedTopics().findIndex((topic) => topic.id === b.id);
+  });
+}
+
+function renderOverallFocusAreas() {
+  const ranked = topicsByAscendingScore();
+  const primary = ranked[0];
+  const secondary = ranked[1];
+  const primaryScore = state.data.scores[primary.id] ?? 0;
+  const secondaryScore = secondary ? (state.data.scores[secondary.id] ?? 0) : null;
+  const primaryMeaning = getTopicMeaning(primary.id, primaryScore);
+  const showSecondary = Boolean(secondary)
+    && typeof secondaryScore === "number"
+    && secondaryScore < 65
+    && (secondaryScore - primaryScore) <= 20;
+
+  const secondaryBlock = showSecondary
+    ? `
+      <div class="overall-focus-item">
+        <p class="overall-focus-meta">Also watch · ${secondary.title} · ${secondaryScore}%</p>
+        <p class="overall-focus-copy">${getTopicMeaning(secondary.id, secondaryScore).copy}</p>
+      </div>`
+    : "";
+
+  return `
+    <section class="overall-focus" aria-labelledby="overallFocusTitle">
+      <header class="overall-focus-header">
+        <p class="overall-focus-label" id="overallFocusTitle">Where to focus first</p>
+        <div class="overall-focus-primary-head">
+          <h4 class="overall-focus-primary-title">${primary.title}</h4>
+          <p class="overall-focus-primary-score">${primaryScore}%</p>
+        </div>
+        <p class="overall-focus-priority-tag"><span class="overall-focus-priority">Priority</span></p>
+      </header>
+      <div class="overall-focus-item is-primary">
+        <p class="overall-focus-copy">${primaryMeaning.copy}</p>
+        <p class="overall-focus-detail">${primaryMeaning.detail}</p>
+      </div>
+      ${secondaryBlock}
+      <p class="overall-focus-assist">
+        <span class="overall-focus-assist-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 11v5"></path>
+            <path d="M12 8h.01"></path>
+          </svg>
+        </span>
+        <span class="overall-focus-assist-copy">
+          Each of the four areas has its own detailed breakdown — dimension scores, insights and next steps.
+          Open comprehensive analysis to explore them all; we recommend starting with <strong>${primary.title}</strong>.
+        </span>
+      </p>
+    </section>`;
+}
+
+function renderOverallSummary(options = {}) {
+  const score = overallAverage();
+  const band = getScoreBand(score);
+  const key = bandKey(score);
+  const weakest = weakestTopic();
+  const topicScores = orderedTopics().map((topic) => ({
+    id: topic.id,
+    title: topic.title,
+    score: state.data.scores[topic.id] ?? 0
+  }));
+  const title = key === "developing" ? "Developing foundations" : band.title;
+  const showCta = Boolean(options.cta);
+
+  return `
+    <article class="overall-summary" aria-labelledby="overallSummaryTitle">
+      <div class="overall-summary-body">
+        <header class="overall-summary-header">
+          <p class="overall-summary-eyebrow">Business Health Check</p>
+          <div class="overall-summary-heading">
+            <h3 class="overall-summary-title" id="overallSummaryTitle">${title}</h3>
+            <p class="overall-summary-badge overall-summary-badge--${key}">${band.badge}</p>
+          </div>
+          <p class="overall-summary-copy">${band.copy}</p>
+        </header>
+        <div class="overall-summary-areas">
+          <p class="overall-summary-areas-label">Scores by area</p>
+          <ul class="overall-summary-topics" aria-label="Scores by area">
+            ${topicScores.map((item) => `
+              <li class="overall-summary-topic${item.id === weakest.id ? " is-weakest" : ""}">
+                <span>${item.title}</span>
+                <strong>${item.score}%</strong>
+              </li>`).join("")}
+          </ul>
+        </div>
+        ${renderOverallFocusAreas()}
+        ${showCta ? `
+        <div class="overall-summary-actions">
+          <button class="button is-icon w-button" type="button" data-view-comprehensive>
+            <span>View comprehensive results</span>${arrowIcon()}
+          </button>
+        </div>` : ""}
+      </div>
+    </article>`;
+}
+
+function enterOverallAssessment() {
+  if (!isMarketingMode() || !allComplete()) return;
+  clearMarketingAdvanceTimer();
+  state.screen = "overall";
+  state.topic = null;
+  state.activeTab = state.activeTab || weakestTopic()?.id || orderedTopics()[0]?.id || ASSESSMENT.topics[0].id;
+  if (isCompactScrollViewport()) pendingScroll = "step";
+  render();
+  emitAssessmentChange("overall");
+}
+
+/** Marketing: open the overall-lookalike summary for a completed topic. */
+function enterTopicSummary(topicId) {
+  if (!isMarketingMode()) return false;
+  const id = topicId || state.topic;
+  if (!id || !getTopic(id) || !state.data.completed[id]) return false;
+  clearMarketingAdvanceTimer();
+  state.topic = id;
+  state.screen = "topic-complete";
+  if (isCompactScrollViewport()) pendingScroll = "step";
+  render();
+  emitAssessmentChange("topic-complete");
+  return true;
+}
+
+function getTopicFocusContext(topicId) {
+  const topic = getTopic(topicId);
+  const topicScore = state.data.scores[topicId] ?? 0;
+  const band = getTopicMeaning(topicId, topicScore);
+  const { weakest, strongest, insightCopy, recommended, allEqual } = analyzeTopicResults(topicId);
+  const dims = dimensionScores(topicId).map((item, index) => ({ ...item, index }));
+  const focusIndex = typeof weakest?.index === "number"
+    ? weakest.index
+    : (dims.length
+      ? [...dims].sort((a, b) => (a.score !== b.score ? a.score - b.score : a.index - b.index))[0].index
+      : 0);
+  const focusDim = dims.find((item) => item.index === focusIndex) || dims[0] || null;
+  const focusTitle = focusDim?.label || weakest?.title || topic.title;
+  const focusScore = typeof weakest?.score === "number"
+    ? weakest.score
+    : (typeof focusDim?.score === "number" ? focusDim.score : topicScore);
+  const questionTitle = weakest?.title || topic.questions[focusIndex]?.[0] || "";
+  const questionAssist = topic.questions[focusIndex]?.[1] || "";
+  const chosenAnswer = ASSESSMENT.answers.find((answer) => answer.score === focusScore) || null;
+  const rankedDims = [...dims].sort((a, b) => (a.score !== b.score ? a.score - b.score : a.index - b.index));
+  const secondaryGaps = rankedDims
+    .filter((item) => item.index !== focusIndex && item.score < 65)
+    .slice(0, 2);
+  const strongestDim = typeof strongest?.index === "number"
+    ? dims.find((item) => item.index === strongest.index)
+    : null;
+
+  return {
+    topic,
+    topicScore,
+    band,
+    focusTitle,
+    focusScore,
+    questionTitle,
+    questionAssist,
+    chosenAnswer,
+    secondaryGaps,
+    strongestDim,
+    insightCopy,
+    recommended,
+    allEqual
+  };
+}
+
+function renderQuestionResponseTable(context, className = "topic-focus-qa") {
+  const { questionTitle, questionAssist, chosenAnswer } = context;
+  if (!questionTitle && !chosenAnswer) return "";
+  return `
+    <table class="${className}">
+      <tbody>
+        ${questionTitle ? `
+        <tr>
+          <th scope="row">Question</th>
+          <td>
+            <p class="topic-focus-question">${questionTitle}</p>
+            ${questionAssist ? `<p class="topic-focus-assist-copy">${questionAssist}</p>` : ""}
+          </td>
+        </tr>` : ""}
+        ${chosenAnswer ? `
+        <tr>
+          <th scope="row">Response</th>
+          <td>
+            <div class="topic-response-recall" role="group" aria-label="Your selected response">
+              <span class="topic-response-radio" aria-hidden="true"></span>
+              <span class="topic-response-body">
+                <strong class="topic-response-label">${chosenAnswer.label}</strong>
+                ${chosenAnswer.clarification
+                  ? `<span class="topic-response-note">${chosenAnswer.clarification}</span>`
+                  : ""}
+              </span>
+            </div>
+          </td>
+        </tr>` : ""}
+      </tbody>
+    </table>`;
+}
+
+function renderTopicFocusAreas(topicId) {
+  const context = getTopicFocusContext(topicId);
+  const {
+    topic,
+    topicScore,
+    focusTitle,
+    focusScore,
+    recommended,
+    band
+  } = context;
+
+  return `
+    <section class="topic-focus-stack" aria-labelledby="topicFocusTitle">
+      <div class="topic-priority-card">
+        <p class="topic-priority-label" id="topicFocusTitle">Where to focus first</p>
+        <div class="topic-priority-head">
+          <h4 class="topic-priority-title">${focusTitle}</h4>
+          <p class="topic-priority-score">${focusScore}%</p>
+        </div>
+        <p class="topic-priority-tag"><span class="topic-priority-badge">Priority</span></p>
+      </div>
+
+      <p class="topic-focus-why">
+        <strong>${focusTitle}</strong> was your weakest response in <strong>${topic.title}</strong>
+        (${topicScore}% overall for this area).
+      </p>
+
+      ${renderQuestionResponseTable(context)}
+
+      <div class="topic-focus-section">
+        <p class="topic-focus-section-label">How to improve</p>
+        ${recommended
+          ? `<p class="topic-focus-recommendation"><strong>${recommended[0]}</strong></p>
+             <p class="topic-focus-section-copy">${recommended[1]}</p>`
+          : `<p class="topic-focus-section-copy">${band.detail}</p>`}
+      </div>
+    </section>`;
+}
+
+function renderTopicSummary(topicId) {
+  const topic = getTopic(topicId);
+  const score = state.data.scores[topicId] ?? calculateScore(topicId);
+  const band = getTopicMeaning(topicId, score);
+  const key = bandKey(score);
+  const finishedAll = allComplete();
+  const retakeBtn = isSharedMode()
+    ? ""
+    : `<button class="button is-secondary is-quaternary w-button" type="button" data-retake-topic>Retake this assessment</button>`;
+  const comprehensiveDisabled = finishedAll ? "" : " disabled aria-disabled=\"true\"";
+  const continueBtn = finishedAll
+    ? ""
+    : `<button class="button is-icon w-button topic-summary-continue" type="button" data-continue-next>
+          <span>Start next topic</span>${arrowIcon()}
+        </button>`;
+
+  const actions = `
+    <div class="overall-summary-actions topic-summary-actions">
+      ${continueBtn
+        ? `<div class="topic-summary-actions-primary">${continueBtn}</div>
+           <div class="topic-summary-actions-divider" aria-hidden="true"></div>`
+        : ""}
+      <div class="topic-summary-actions-row">
+        ${retakeBtn}
+        <button class="button is-icon w-button" type="button" data-view-comprehensive${comprehensiveDisabled}>
+          <span>View comprehensive results</span>${arrowIcon()}
+        </button>
+      </div>
+    </div>`;
+
+  return `
+    <article class="overall-summary topic-summary" aria-labelledby="topicSummaryTitle">
+      <div class="overall-summary-body">
+        <header class="overall-summary-header">
+          <p class="overall-summary-eyebrow">${topic.title}</p>
+          <div class="overall-summary-heading">
+            <h3 class="overall-summary-title" id="topicSummaryTitle">${band.title}</h3>
+            <p class="overall-summary-badge overall-summary-badge--${key}">${band.badge}</p>
+          </div>
+          <p class="overall-summary-copy">${band.copy}</p>
+        </header>
+        ${renderTopicFocusAreas(topicId)}
+        ${actions}
+      </div>
+    </article>`;
+}
+
+function renderOverall() {
+  state.screen = "overall";
+  els.stepLabel.textContent = "Overall assessment";
+  els.topicLabel.textContent = "All 4 areas complete";
+  els.screenTitle.textContent = "Your Business Health Check result";
+  els.screenCopy.textContent = "Here's how your business looks across all four areas — then dig into the full breakdown.";
+  setProgress(100);
+  els.body.innerHTML = renderOverallSummary({ cta: true });
+  els.body.querySelector("[data-view-comprehensive]")?.addEventListener("click", () => {
+    const weakest = weakestTopic();
+    enterComprehensiveAnalysis({ tab: weakest?.id });
+  });
+  hideFooter();
+}
+
 function renderAnalysisSummary(topicId) {
   const topic = getTopic(topicId);
   const score = state.data.scores[topicId] ?? calculateScore(topicId);
   const band = getTopicMeaning(topicId, score);
+  const key = bandKey(score);
 
   return `
     <article class="analysis-summary elevated-soft">
       <div class="analysis-summary-score">
-        ${renderScoreRing(score, "analysisSummaryRing", true)}
+        ${renderScoreRing(score, "analysisSummaryRing", true, { band: key })}
         <span class="analysis-summary-score-label">${topic.shortTitle} score</span>
       </div>
       <div class="analysis-summary-body">
-        <div class="result-badge-wrap result-badge-wrap--${bandKey(score)}">
+        <div class="result-badge-wrap result-badge-wrap--${key}">
           <p class="result-badge">${band.badge}</p>
           <p class="result-badge-hint">${band.badgeHint}</p>
         </div>
-        <div class="result-headline result-headline--${bandKey(score)}">
-          ${resultBandIcon(bandKey(score))}
+        <div class="result-headline result-headline--${key}">
+          ${resultBandIcon(key)}
           <h3 class="result-title">${band.title}</h3>
         </div>
         <p class="analysis-summary-copy">${band.copy}</p>
@@ -747,13 +1341,23 @@ function renderAnalysisSummary(topicId) {
     </article>`;
 }
 
-function renderScoreRing(score, ringId = "scoreRing", compact = false) {
-  const gradId = `scoreGradient-${ringId}`;
+function renderScoreRing(score, ringId = "scoreRing", compact = false, options = {}) {
+  const bandColors = {
+    strong: "#34b18f",
+    good: "#586ec7",
+    developing: "#f19a30",
+    attention: "#d91e63"
+  };
+  const solid = options.band && bandColors[options.band] ? bandColors[options.band] : null;
+  const start = solid || "#d91e63";
+  const end = solid || "#5d2e8c";
   const wrapClass = compact ? "score-wrap score-wrap--compact" : "score-wrap";
+  const bandAttr = options.band ? ` data-band="${options.band}"` : "";
+  const gradId = `scoreGradient-${ringId}`;
   return `
-    <div class="${wrapClass}">
+    <div class="${wrapClass}"${bandAttr}>
       <svg class="score-ring" viewBox="0 0 120 120" aria-hidden="true">
-        <defs><linearGradient id="${gradId}" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="#d91e63"/><stop offset="100%" stop-color="#5d2e8c"/></linearGradient></defs>
+        <defs><linearGradient id="${gradId}" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="${start}"/><stop offset="100%" stop-color="${end}"/></linearGradient></defs>
         <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
         <circle class="ring-fill" id="${ringId}" cx="60" cy="60" r="52" stroke="url(#${gradId})"></circle>
       </svg>
@@ -894,16 +1498,25 @@ function renderHubProgressSteps() {
 function restartAssessment() {
   if (isSharedMode()) return exitSharedMode();
   if (!confirm("Restart your overall assessment? All progress across every area will be cleared.")) return;
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(getStorageKey());
+  localStorage.removeItem(getSessionKey());
   state.data = { ...defaultProgress };
-  state.topic = null;
   state.questionIndex = 0;
-  state.activeTab = "website";
-  state.screen = "hub";
+  state.retakeHold = null;
   els.shareFeedback?.classList.add("is-hidden");
+  if (isMarketingMode()) {
+    const startId = marketingStartTopicId();
+    state.topic = startId;
+    state.activeTab = startId;
+    state.screen = "questions";
+  } else {
+    state.topic = null;
+    state.activeTab = "website";
+    state.screen = "hub";
+  }
   if (isCompactScrollViewport()) pendingScroll = "step";
   render();
+  emitAssessmentChange("restart");
 }
 
 function renderHub() {
@@ -1029,16 +1642,20 @@ function renderQuestions() {
   els.screenCopy.textContent = topic.description;
   setProgress(overallProgressPercent(state.questionIndex, total));
 
+  const hideHeldAnswers = isMarketingMode() && state.retakeHold === state.topic;
   els.body.innerHTML = `
     <div class="question-kicker"><span class="question-kicker-topic">${topic.title}</span> · Question ${state.questionIndex + 1} of ${total}</div>
     <div class="progress question-progress" aria-label="Question ${state.questionIndex + 1} of ${total}">
       <div class="progress-track progress-segments">${segments}</div>
     </div>
+    ${isMarketingMode()
+      ? `<p class="question-assist">Choose the option that best reflects how things work today — not how you’d like them to work.</p>`
+      : ""}
     <h3 class="question-title">${current[0]}</h3>
     <p class="question-description">${current[1]}</p>
     <div class="answers">${ASSESSMENT.answers.map((answer) => `
-      <button class="answer-card ${selectedAnswerForQuestion() === answer.score ? "is-selected" : ""}" type="button" data-score="${answer.score}">
-        <span class="answer-dot"></span><span><strong>${answer.label}</strong></span>
+      <button class="answer-card ${!hideHeldAnswers && selectedAnswerForQuestion() === answer.score ? "is-selected" : ""}" type="button" data-score="${answer.score}">
+        <span class="answer-dot"></span><span class="answer-text"><strong class="answer-label">${answer.label}</strong>${isMarketingMode() && answer.clarification ? `<span class="answer-clarification">${answer.clarification}</span>` : ""}</span>
       </button>`).join("")}</div>
     <div class="error is-hidden" id="answerError">Please choose an answer before continuing.</div>`;
 
@@ -1047,9 +1664,17 @@ function renderQuestions() {
   configureQuestionFooter();
   els.footer.classList.remove("is-hidden");
   const isLastQuestion = state.questionIndex === total - 1;
-  const hasAnswer = selectedAnswerForQuestion() !== undefined;
-  setButtonLabel(els.next, isLastQuestion && hasAnswer ? "View Result" : "Next", true);
-  els.next.disabled = false;
+  const hasAnswer = hideHeldAnswers ? false : selectedAnswerForQuestion() !== undefined;
+
+  if (isMarketingMode()) {
+    let nextLabel = "Next question";
+    if (isLastQuestion && hasAnswer) nextLabel = "Finish this area";
+    setButtonLabel(els.next, nextLabel, true);
+    els.next.disabled = !hasAnswer;
+  } else {
+    setButtonLabel(els.next, isLastQuestion && hasAnswer ? "View Result" : "Next", true);
+    els.next.disabled = false;
+  }
   els.next.style.display = "";
 }
 
@@ -1060,6 +1685,19 @@ function renderTopicOutcome(mode) {
   const band = getTopicMeaning(topic.id, score);
   const justCompleted = mode === "topic-complete";
   const finishedAll = allComplete();
+
+  // Marketing: overall-lookalike topic summary; score ring stays in the right preview panel.
+  if (isMarketingMode()) {
+    els.stepLabel.textContent = justCompleted ? "Area complete" : topic.title;
+    els.topicLabel.textContent = `${completedCount()} of 4 areas complete`;
+    els.screenTitle.textContent = `${topic.title} result`;
+    els.screenCopy.textContent = `Your result for ${topic.title} — focus areas and next steps below.`;
+    setProgress(overallProgressPercent());
+    els.body.innerHTML = renderTopicSummary(topic.id);
+    hideFooter();
+    bindTopicOutcomeEvents();
+    return;
+  }
 
   if (justCompleted && finishedAll) {
     els.stepLabel.textContent = "All areas complete";
@@ -1080,6 +1718,10 @@ function renderTopicOutcome(mode) {
   setProgress(overallProgressPercent());
 
   const hubButtonLabel = finishedAll ? "Back to hub" : "Choose your next topic";
+  const topicActions = `<div class="topic-actions">
+          <button class="button is-small w-button" type="button" data-back-hub>${hubButtonLabel}</button>
+          ${isSharedMode() ? "" : `<button class="button is-secondary is-quaternary is-small w-button" type="button" data-retake-topic>Retake this assessment</button>`}
+        </div>`;
 
   els.body.innerHTML = `
     <div class="topic-complete-grid">
@@ -1099,10 +1741,7 @@ function renderTopicOutcome(mode) {
         ${renderRetakeComparison(topic.id, score)}
         <p class="result-copy">${band.copy}</p>
         <p class="result-detail">${band.detail}</p>
-        <div class="topic-actions">
-          <button class="button is-small w-button" type="button" data-back-hub>${hubButtonLabel}</button>
-          ${isSharedMode() ? "" : `<button class="button is-secondary is-quaternary is-small w-button" type="button" data-retake-topic>Retake this assessment</button>`}
-        </div>
+        ${topicActions}
       </div>
     </div>`;
 
@@ -1114,7 +1753,25 @@ function renderTopicOutcome(mode) {
 
 function bindTopicOutcomeEvents() {
   els.body.querySelector("[data-retake-topic]")?.addEventListener("click", retakeTopic);
+  els.body.querySelector("[data-continue-next]")?.addEventListener("click", () => {
+    if (allComplete()) {
+      if (isMarketingMode()) enterOverallAssessment();
+      else enterComprehensiveAnalysis();
+    } else goToNextTopic();
+  });
+  els.body.querySelector("[data-back-overall]")?.addEventListener("click", () => {
+    if (isMarketingMode()) enterOverallAssessment();
+  });
+  els.body.querySelector("[data-view-comprehensive]")?.addEventListener("click", (event) => {
+    if (!allComplete() || event.currentTarget?.disabled) return;
+    enterComprehensiveAnalysis({ tab: state.topic });
+  });
   els.body.querySelector("[data-back-hub]")?.addEventListener("click", () => {
+    if (isMarketingMode()) {
+      if (allComplete()) enterOverallAssessment();
+      else goToNextTopic();
+      return;
+    }
     state.screen = "hub";
     state.topic = null;
     if (isCompactScrollViewport()) pendingScroll = "step";
@@ -1122,28 +1779,37 @@ function bindTopicOutcomeEvents() {
   });
 }
 
-function retakeTopic() {
+function retakeTopic(topicId = state.topic) {
   if (isSharedMode()) return;
-  const topicId = state.topic;
-  if (state.data.scores[topicId]) recordTopicScoreHistory(topicId, state.data.scores[topicId]);
-  delete state.data.answers[topicId];
-  delete state.data.scores[topicId];
-  state.data.completed[topicId] = false;
+  const id = topicId || state.topic;
+  if (!id || !getTopic(id)) return false;
+  if (state.data.scores[id]) recordTopicScoreHistory(id, state.data.scores[id]);
+  delete state.data.answers[id];
+  delete state.data.scores[id];
+  state.data.completed[id] = false;
+  state.retakeHold = null;
+  state.topic = id;
   state.questionIndex = 0;
-  state.data.answers[topicId] = {};
+  state.data.answers[id] = {};
   saveProgress();
   state.screen = "questions";
   if (isMobileScrollViewport()) pendingScroll = "question";
   render();
+  emitAssessmentChange("retake-topic");
+  return true;
 }
 
 function renderResultsPanel(topicId) {
   const topic = getTopic(topicId);
-  const score = state.data.scores[topicId];
-  const band = getTopicMeaning(topicId, score);
-  const { weakest } = analyzeTopicResults(topicId);
+  const band = getTopicMeaning(topicId, state.data.scores[topicId]);
   const rankedRecommendations = getRankedRecommendationItems(topic, state.data.answers[topicId] || {});
   const dims = dimensionScores(topicId);
+
+  const meaningPoints = rankedRecommendations.map((item) => `
+      <div class="results-meaning-point">
+        <h4 class="results-meaning-point-title">${item.recommendation[0]}</h4>
+        <p class="results-meaning-point-copy">${buildMeaningInsight(item)}</p>
+      </div>`).join("");
 
   return `
     <div class="results-panel">
@@ -1161,10 +1827,10 @@ function renderResultsPanel(topicId) {
           </section>
           <section class="results-section results-section--meaning">
             <h3>What this means</h3>
-            <p class="results-lead">${band.copy}</p>
             <p class="results-detail">${band.detail}</p>
-            <p class="results-context">For <strong>${topic.title}</strong>, your overall score of <strong>${score}%</strong> reflects how clearly your business handles ${topic.resultFocus} today.</p>
-            <div class="opportunity-callout"><span>✦</span><div><strong>Biggest opportunity</strong><p>${weakest.title}</p></div></div>
+            ${meaningPoints
+              ? `<div class="results-meaning-points">${meaningPoints}</div>`
+              : ""}
           </section>
         </div>
       <article class="results-card results-card--recommendations">
@@ -1186,12 +1852,16 @@ function renderResultsPanel(topicId) {
 
 function renderComprehensive() {
   state.screen = "comprehensive";
-  els.stepLabel.textContent = isSharedMode() ? "Shared results" : "Comprehensive analysis";
+  const activeTopic = getTopic(state.activeTab);
+  const activeTitle = activeTopic?.title || "Area";
+  els.stepLabel.textContent = isSharedMode() ? "Shared results" : `${activeTitle} analysis`;
   els.topicLabel.textContent = isSharedMode() ? "Read only" : "All 4 areas complete";
-  els.screenTitle.textContent = isSharedMode() ? "Shared assessment breakdown" : "Your full assessment breakdown";
+  els.screenTitle.textContent = isSharedMode()
+    ? "Shared assessment breakdown"
+    : `${activeTitle} — detailed results`;
   els.screenCopy.textContent = isSharedMode()
     ? "You are viewing someone else's completed results. Your own assessment progress is unchanged."
-    : "Review your overall result above, then explore each area in detail below.";
+    : "Scores, insights, and recommended next steps for this area. Use the tabs above to switch areas.";
 
   els.body.innerHTML = `
     ${isSharedMode() ? `<p class="shared-results-banner" role="status">Shared results — read only</p>` : ""}
@@ -1221,7 +1891,9 @@ function renderComprehensive() {
     <div class="analysis-back-nav">
       ${isSharedMode()
         ? `<button class="button is-secondary is-resource is-icon w-button" type="button" data-exit-shared><span>Back to my assessment</span>${homeIcon()}</button>`
-        : backHubButton()}
+        : (isMarketingMode()
+          ? `<button class="button is-secondary is-resource is-icon w-button" type="button" data-review-last><span>View overall assessment</span>${homeIcon()}</button>`
+          : backHubButton())}
     </div>`;
 
   els.body.querySelectorAll("[data-tab]").forEach((button) => {
@@ -1232,10 +1904,22 @@ function renderComprehensive() {
   });
 
   els.body.querySelector("[data-back-hub]")?.addEventListener("click", () => {
+    if (isMarketingMode()) {
+      enterOverallAssessment();
+      return;
+    }
     state.screen = "hub";
     state.topic = null;
     if (isCompactScrollViewport()) pendingScroll = "step";
     render();
+  });
+  els.body.querySelector("[data-review-last]")?.addEventListener("click", () => {
+    if (isMarketingMode()) {
+      enterOverallAssessment();
+      return;
+    }
+    const lastCompleted = [...orderedTopics()].reverse().find((topic) => state.data.completed[topic.id]);
+    if (lastCompleted) reviewTopic(lastCompleted.id);
   });
   els.body.querySelector("[data-exit-shared]")?.addEventListener("click", exitSharedMode);
 
@@ -1356,9 +2040,13 @@ function referAssessmentUrl() {
   const url = assessmentPageUrl();
   url.search = "";
   url.hash = "";
-  if (/business-health-check/i.test(url.pathname)) return url.toString();
+  const cfg = getAssessmentConfig();
+  if (cfg.pageUrl) return cfg.pageUrl;
+  if (isMarketingMode() || /business-health-check/i.test(url.hostname) || /business-health-check/i.test(url.pathname)) {
+    return url.toString();
+  }
   if (url.protocol.startsWith("http") && !/localhost|127\.0\.0\.1/i.test(url.hostname)) {
-    return new URL(BHC_PAGE_PATH, url.origin).toString();
+    return new URL(cfg.pagePath || BHC_PAGE_PATH, url.origin).toString();
   }
   return url.toString();
 }
@@ -1440,6 +2128,7 @@ async function shareOwnResults() {
   });
   if (result === "shared") showShareFeedback("Results shared.");
   else if (result === "copied") showShareFeedback("Share link copied to clipboard.");
+  return result;
 }
 
 async function referBusinessHealthCheck() {
@@ -1451,10 +2140,29 @@ async function referBusinessHealthCheck() {
   });
   if (result === "shared") showShareFeedback("Business Health Check shared.");
   else if (result === "copied") showShareFeedback("Referral link copied to clipboard.");
+  return result;
+}
+
+function getResultsShareUrl() {
+  if (isSharedMode() || !allComplete()) return null;
+  const encoded = encodeSharePayload();
+  return encoded ? sharedResultsUrl(encoded) : null;
+}
+
+function getReferShareUrl() {
+  return referAssessmentUrl();
+}
+
+function openLinkedInShare(url = getReferShareUrl()) {
+  if (!url) throw new Error("Share URL not ready");
+  const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+  window.open(shareUrl, "linkedin-share", "noopener,noreferrer,width=640,height=640");
+  return "opened";
 }
 
 function updateAuxiliaryPanels() {
-  const showDelivery = !isSharedMode()
+  const showDelivery = !isMarketingMode()
+    && !isSharedMode()
     && allComplete()
     && (state.screen === "hub" || state.screen === "comprehensive");
   els.emailPanel?.classList.toggle("is-hidden", !showDelivery);
@@ -1611,13 +2319,34 @@ function render() {
   const lockScroll = !isMobileScrollViewport();
   const savedScrollY = lockScroll ? window.scrollY : null;
 
+  if (isMarketingMode() && state.screen === "hub") {
+    if (allComplete()) {
+      state.screen = "overall";
+      state.topic = null;
+      state.activeTab = state.activeTab || weakestTopic()?.id || orderedTopics()[0]?.id || ASSESSMENT.topics[0].id;
+    } else {
+      state.screen = "questions";
+      state.topic = state.topic || firstIncompleteTopicId() || marketingStartTopicId();
+      state.questionIndex = firstUnansweredQuestionIndex(state.topic);
+    }
+  }
+
   if (state.screen === "hub") renderHub();
   if (state.screen === "questions") renderQuestions();
+  if (state.screen === "marketing-confirm") renderMarketingConfirm();
+  if (state.screen === "overall") renderOverall();
   if (state.screen === "topic-complete" || state.screen === "topic-snapshot") renderTopicOutcome(state.screen);
   if (state.screen === "comprehensive") renderComprehensive();
   else if (state.screen !== "comprehensive") els.next.style.display = "";
 
-  els.mainProgressSlot?.classList.toggle("is-hidden", state.screen === "comprehensive");
+  document.getElementById("assessment")?.classList.toggle("is-marketing-mode", isMarketingMode());
+  els.mainProgressSlot?.classList.toggle(
+    "is-hidden",
+    state.screen === "comprehensive"
+      || state.screen === "marketing-confirm"
+      || state.screen === "overall"
+      || (isMarketingMode() && state.screen === "topic-complete")
+  );
   updateAuxiliaryPanels();
   saveSession();
 
@@ -1639,8 +2368,16 @@ function finishTopic() {
   state.data.scores[topic.id] = score;
   recordTopicScoreHistory(topic.id, score);
   saveProgress();
+
+  // Marketing: pause on topic-complete for areas 1–3; final area goes straight to overall.
+  if (isMarketingMode() && allComplete()) {
+    enterOverallAssessment();
+    return;
+  }
+
   state.screen = "topic-complete";
   render();
+  emitAssessmentChange("topic-complete");
 }
 
 function ensureShellClasses() {
@@ -1682,6 +2419,7 @@ function bindEvents() {
   });
 
   els.hub?.addEventListener("click", () => {
+    if (isMarketingMode()) return;
     if (state.screen !== "questions") return;
     state.screen = "hub";
     state.topic = null;
@@ -1691,6 +2429,11 @@ function bindEvents() {
 
   els.back?.addEventListener("click", () => {
     if (state.screen === "comprehensive") {
+      if (isMarketingMode()) {
+        const lastCompleted = [...orderedTopics()].reverse().find((topic) => state.data.completed[topic.id]);
+        if (lastCompleted) reviewTopic(lastCompleted.id);
+        return;
+      }
       state.screen = "hub";
       state.topic = null;
       if (isCompactScrollViewport()) pendingScroll = "step";
@@ -1764,7 +2507,7 @@ function initAssessment() {
   els = getElements();
   if (!els.body || !els.next) return;
   document.getElementById("assessmentLoadHint")?.classList.add("is-hidden");
-  ensureWebflowPanelChrome();
+  if (!isMarketingMode()) ensureWebflowPanelChrome();
   bindEvents();
 
   const sharedData = parseSharedResultsFromUrl();
@@ -1772,11 +2515,38 @@ function initAssessment() {
     hydrateSharedResults(sharedData);
   } else {
     restoreSession();
+    // Marketing has no hub — only seed questions when still in progress.
+    // Do not overwrite an all-complete comprehensive restore (topic stays null there).
+    if (isMarketingMode() && !allComplete() && state.screen !== "comprehensive" && !state.topic) {
+      state.screen = "questions";
+      state.topic = marketingStartTopicId();
+      state.questionIndex = 0;
+    }
   }
   render();
+  emitAssessmentChange("init");
 }
 
 window.BTAssessmentInit = initAssessment;
+window.BTAssessment = {
+  getSnapshot,
+  startTopic,
+  reviewTopic,
+  openTopicForRetake,
+  enterTopicSummary,
+  retakeTopic,
+  goToNextTopic,
+  enterComprehensive: enterComprehensiveAnalysis,
+  enterOverall: enterOverallAssessment,
+  restartAssessment,
+  shareResults: shareOwnResults,
+  referAssessment: referBusinessHealthCheck,
+  shareOnLinkedIn: openLinkedInShare,
+  getResultsShareUrl,
+  getReferShareUrl,
+  isMarketingMode,
+  orderedTopics: () => orderedTopics().map((topic) => topic.id)
+};
 
 const cfg = window.BTAssessmentConfig || {};
 const root = document.getElementById("assessment");

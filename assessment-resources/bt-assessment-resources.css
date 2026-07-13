@@ -72,7 +72,7 @@
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; font-family: "Cairo", Arial, sans-serif; color: var(--bt-iron); background: var(--bt-white); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: clip; }
+body { margin: 0; font-family: "Cairo", Arial, sans-serif; color: var(--bt-iron); background: var(--bt-white); line-height: 1.6; -webkit-font-smoothing: auto; -moz-osx-font-smoothing: auto; overflow-x: clip; }
 a { color: inherit; }
 h1, h2, h3, p { margin-top: 0; }
 p { color: var(--bt-iron); font-size: var(--bt-text-regular); line-height: var(--bt-text-regular-line); font-weight: 400; }
