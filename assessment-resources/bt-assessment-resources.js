@@ -503,6 +503,44 @@ function backHubButton(label = "Back to hub", attrs = 'type="button" data-back-h
   return `<button class="button is-secondary is-resource is-icon w-button" ${attrs}><span>${label}</span>${homeIcon()}</button>`;
 }
 
+function goToHubFromComprehensive() {
+  state.screen = "hub";
+  state.topic = null;
+  if (isCompactScrollViewport()) pendingScroll = "step";
+  render();
+}
+
+function ensureComprehensiveBackNav() {
+  let slot = document.getElementById("comprehensiveBackNav");
+  if (slot) return slot;
+
+  const passOnSlot = document.getElementById("previewPassOnComprehensive");
+  if (!passOnSlot) return null;
+
+  slot = document.createElement("div");
+  slot.id = "comprehensiveBackNav";
+  slot.className = "analysis-back-nav analysis-back-nav--after-pass-on";
+  slot.hidden = true;
+  passOnSlot.insertAdjacentElement("afterend", slot);
+  return slot;
+}
+
+function updateComprehensiveBackNav() {
+  const slot = ensureComprehensiveBackNav();
+  if (!slot) return;
+
+  const showBelowPassOn = state.screen === "comprehensive" && !isMarketingMode() && !isSharedMode();
+  if (!showBelowPassOn) {
+    slot.hidden = true;
+    slot.innerHTML = "";
+    return;
+  }
+
+  slot.hidden = false;
+  slot.innerHTML = backHubButton();
+  slot.querySelector("[data-back-hub]")?.addEventListener("click", goToHubFromComprehensive);
+}
+
 function getRecommendationAction(topicId, index) {
   const actionKey = RECOMMENDATION_ACTIONS[topicId]?.[index];
   if (!actionKey) return null;
@@ -1877,13 +1915,12 @@ function renderComprehensive() {
         </div>
       </div>
     </section>
+    ${(isSharedMode() || isMarketingMode()) ? `
     <div class="analysis-back-nav">
       ${isSharedMode()
         ? `<button class="button is-secondary is-resource is-icon w-button" type="button" data-exit-shared><span>Back to my assessment</span>${homeIcon()}</button>`
-        : (isMarketingMode()
-          ? `<button class="button is-secondary is-resource is-icon w-button" type="button" data-review-last><span>View overall assessment</span>${homeIcon()}</button>`
-          : backHubButton())}
-    </div>`;
+        : `<button class="button is-secondary is-resource is-icon w-button" type="button" data-review-last><span>View overall assessment</span>${homeIcon()}</button>`}
+    </div>` : ""}`;
 
   els.body.querySelectorAll("[data-tab]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -1897,10 +1934,7 @@ function renderComprehensive() {
       enterOverallAssessment();
       return;
     }
-    state.screen = "hub";
-    state.topic = null;
-    if (isCompactScrollViewport()) pendingScroll = "step";
-    render();
+    goToHubFromComprehensive();
   });
   els.body.querySelector("[data-review-last]")?.addEventListener("click", () => {
     if (isMarketingMode()) {
@@ -1924,6 +1958,7 @@ function renderComprehensive() {
 
   els.footer.classList.remove("is-hidden");
   configureComprehensiveFooter();
+  updateComprehensiveBackNav();
 }
 
 function bindTabKeyboard() {
@@ -2509,7 +2544,10 @@ function render() {
       || (isMarketingMode() && state.screen === "topic-complete")
   );
   updateAuxiliaryPanels();
-  if (!isMarketingMode()) updatePassOnPanel(getSnapshot());
+  if (!isMarketingMode()) {
+    updatePassOnPanel(getSnapshot());
+    if (state.screen !== "comprehensive") updateComprehensiveBackNav();
+  }
   saveSession();
 
   if (lockScroll && savedScrollY !== null) {
