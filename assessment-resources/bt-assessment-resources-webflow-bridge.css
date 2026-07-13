@@ -99,6 +99,7 @@ body * {
   font-size: clamp(1.22rem, 2vw, 1.45rem);
   line-height: 1.05;
   font-weight: 500 !important;
+  font-synthesis: none;
   letter-spacing: 0.01em;
 }
 
