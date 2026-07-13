@@ -1598,7 +1598,7 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
 
 #assessment:not(.is-marketing-mode)[data-screen="comprehensive"] .preview-pass-on-comprehensive {
   width: 100%;
-  margin: 1.25rem 0 0;
+  margin: 0;
   padding: 0 var(--bt-comprehensive-content-right) 0 var(--bt-comprehensive-content-left);
   box-sizing: border-box;
 }
@@ -1612,6 +1612,11 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
 
 #assessment:not(.is-marketing-mode)[data-screen="comprehensive"] .analysis-back-nav--after-pass-on[hidden] {
   display: none !important;
+}
+
+#assessment:not(.is-marketing-mode)[data-screen="comprehensive"] .assessment-footer.is-cta {
+  padding-left: var(--bt-comprehensive-content-left);
+  padding-right: var(--bt-comprehensive-content-right);
 }
 
 #assessment:not(.is-marketing-mode)[data-screen="comprehensive"] .preview-pass-on-comprehensive[hidden] {

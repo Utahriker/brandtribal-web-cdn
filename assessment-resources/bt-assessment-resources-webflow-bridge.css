@@ -270,7 +270,7 @@ body * {
 }
 
 #assessment[data-screen="comprehensive"]:not(.is-marketing-mode) #previewPassOnComprehensive {
-  margin-top: 1.25rem;
+  margin-top: 0;
 }
 
 #assessment[data-screen="comprehensive"]:not(.is-marketing-mode) #comprehensiveBackNav {
@@ -279,6 +279,11 @@ body * {
 
 #assessment[data-screen="comprehensive"]:not(.is-marketing-mode) #comprehensiveBackNav[hidden] {
   display: none !important;
+}
+
+#assessment[data-screen="comprehensive"]:not(.is-marketing-mode) #screenFooter.is-cta {
+  padding-left: var(--bt-comprehensive-content-left);
+  padding-right: var(--bt-comprehensive-content-right);
 }
 
 /* Footer nav — ID selectors (Webflow strips footer-nav classes) */
