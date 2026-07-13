@@ -2669,20 +2669,26 @@ function ensureWebflowPanelChrome() {
   });
 }
 
-const PASS_ON_LINKEDIN_ICON = "https://utahriker.github.io/brandtribal-web-cdn/assessment-resources/linkedin-in.png?v=20260713.passon6";
+const PASS_ON_LINKEDIN_ICON = "https://utahriker.github.io/brandtribal-web-cdn/assessment-resources/linkedin-in.png?v=20260713.passon7";
+
+function getResourcesAssessmentRoot() {
+  const assessment = document.getElementById("assessment");
+  if (!assessment || isMarketingMode()) return null;
+  return assessment;
+}
 
 function findPassOnRoots(scope = document) {
-  const roots = new Set();
-  const assessment = document.getElementById("assessment");
+  const assessment = getResourcesAssessmentRoot();
   if (!assessment) return [];
 
+  const roots = new Set();
   const searchRoot = scope?.querySelector ? scope : document;
   searchRoot.querySelectorAll(".preview-pass-on").forEach((node) => {
     if (assessment.contains(node)) roots.add(node);
   });
 
   searchRoot.querySelectorAll("p").forEach((label) => {
-    if (label.textContent.trim() !== "Pass it on") return;
+    if (!assessment.contains(label) || label.textContent.trim() !== "Pass it on") return;
     let node = label.parentElement;
     while (node && node !== assessment) {
       if (node.querySelector("[data-pass-on-action]")) {
@@ -2728,8 +2734,11 @@ function decoratePassOnRoot(root) {
 }
 
 function convertPassOnActions(scope = document) {
+  const assessment = getResourcesAssessmentRoot();
+  if (!assessment) return;
+
   const searchRoot = scope?.querySelector ? scope : document;
-  searchRoot.querySelectorAll("#assessment [data-pass-on-action]").forEach((node) => {
+  searchRoot.querySelectorAll("#assessment:not(.is-marketing-mode) [data-pass-on-action]").forEach((node) => {
     if (node.tagName === "A") {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -2743,12 +2752,12 @@ function convertPassOnActions(scope = document) {
     }
   });
 
-  searchRoot.querySelectorAll("#assessment [data-pass-on-action]").forEach((btn) => {
+  searchRoot.querySelectorAll("#assessment:not(.is-marketing-mode) [data-pass-on-action]").forEach((btn) => {
     btn.classList.add("preview-pass-on-btn");
     if (btn.dataset.passOnAction === "linkedin") btn.classList.add("is-linkedin");
   });
 
-  searchRoot.querySelectorAll("#assessment [data-pass-on-action] [aria-hidden='true']").forEach((icon) => {
+  searchRoot.querySelectorAll("#assessment:not(.is-marketing-mode) [data-pass-on-action] [aria-hidden='true']").forEach((icon) => {
     if (icon.closest("[data-pass-on-action='linkedin']")) {
       icon.classList.add("preview-pass-on-btn-icon", "preview-pass-on-btn-icon--linkedin");
     } else if (icon.closest("[data-pass-on-action]")) {
@@ -2756,7 +2765,7 @@ function convertPassOnActions(scope = document) {
     }
   });
 
-  searchRoot.querySelectorAll("#assessment [data-pass-on-action=\"linkedin\"] img").forEach((img) => {
+  searchRoot.querySelectorAll("#assessment:not(.is-marketing-mode) [data-pass-on-action=\"linkedin\"] img").forEach((img) => {
     if (!img.getAttribute("src")) {
       img.src = PASS_ON_LINKEDIN_ICON;
       img.alt = "";
@@ -2768,6 +2777,7 @@ function convertPassOnActions(scope = document) {
 }
 
 function repairPassOnMarkup(scope = document) {
+  if (isMarketingMode()) return;
   findPassOnRoots(scope).forEach(decoratePassOnRoot);
   convertPassOnActions(scope);
 }
