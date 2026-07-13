@@ -2258,7 +2258,8 @@ function updatePassOnPanel(snapshot) {
     els.passOn.style.display = passOnState.showPanel ? "" : "none";
   }
 
-  els.passOn?.querySelector(".preview-pass-on-copy")?.textContent = "Share your results with a colleague, or invite someone to take the health check.";
+  const passOnCopy = els.passOn?.querySelector(".preview-pass-on-copy");
+  if (passOnCopy) passOnCopy.textContent = "Share your results with a colleague, or invite someone to take the health check.";
   document.querySelectorAll("#assessment .preview-pass-on--summary .preview-pass-on-copy").forEach((node) => {
     node.textContent = "Finished reviewing? Share your results or invite someone else to take the health check.";
   });
