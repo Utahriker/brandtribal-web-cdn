@@ -313,7 +313,10 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
   background: var(--bt-white);
   box-shadow: var(--bt-shadow-offset-subtle);
 }
-.hub-card.is-complete:hover { border-color: var(--bt-cerise); }
+.hub-card.is-complete:hover {
+  border-color: var(--bt-cerise);
+  background: var(--bt-cerise-05);
+}
 .hub-card-inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: center; width: 100%; }
 .hub-card-main { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1rem; align-items: start; }
 .hub-card-icon {
