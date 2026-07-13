@@ -1058,6 +1058,37 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
 }
 .recommend-item p { margin: 0; font-size: var(--bt-text-tiny); line-height: 1.45; }
 
+/* Comprehensive — “What this means” compartments mirror We’d start here cards */
+.results-meaning-points {
+  display: grid;
+  gap: 0.95rem;
+  margin: 0;
+  padding-top: 0.15rem;
+}
+.results-meaning-point {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.85rem 0 0;
+  border-top: 1px solid var(--bt-iron-10);
+}
+.results-meaning-point:first-child {
+  padding-top: 0.85rem;
+}
+.results-meaning-point-title {
+  margin: 0;
+  font-size: var(--bt-text-small);
+  font-weight: 700;
+  line-height: var(--bt-text-small-line);
+  color: var(--bt-purple);
+}
+.results-meaning-point-copy {
+  margin: 0;
+  font-size: var(--bt-text-small);
+  line-height: var(--bt-text-small-line);
+  color: var(--bt-iron);
+}
+
 /* Delivery panel — matches website cta7 / cta-banner-home */
 .delivery-panel {
   margin-top: 2rem;

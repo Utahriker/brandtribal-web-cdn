@@ -957,29 +957,6 @@ function getRankedRecommendationItems(topic, topicAnswers) {
     });
 }
 
-function buildMeaningInsight(item) {
-  const dimension = item.dimension || "This area";
-  const label = item.answer?.label || "";
-  const score = item.score;
-  const recTitle = item.recommendation?.[0] || "this focus";
-  const answered = label ? ` — you answered <strong>${label}</strong>` : "";
-
-  let reading;
-  if (score <= 25) {
-    reading = `<strong>${dimension}</strong> is a clear gap${answered}. That usually means people cannot rely on a consistent experience here, so trust and next steps get harder than they need to be.`;
-  } else if (score <= 40) {
-    reading = `<strong>${dimension}</strong> is hard to judge from the inside${answered}. Uncertainty here often shows up as an uneven customer experience even when the intent feels clear to the team.`;
-  } else if (score <= 50) {
-    reading = `<strong>${dimension}</strong> is only partly working${answered}. Some pieces may be in place, but inconsistency still creates hesitation when people compare touchpoints or decide what to do next.`;
-  } else if (score <= 75) {
-    reading = `<strong>${dimension}</strong> is close, but not fully reliable${answered}. Gaps at this level tend to show up as friction rather than outright confusion, and they compound if left alone.`;
-  } else {
-    reading = `<strong>${dimension}</strong> looks comparatively strong${answered}. Use it as a reference for how the weaker areas should feel.`;
-  }
-
-  return `${reading} That reading is why <strong>${recTitle}</strong> sits behind the actions below.`;
-}
-
 function strongestAndWeakest(topicId) {
   const { strongest, weakest } = analyzeTopicResults(topicId);
   return { strongest, weakest };
@@ -1808,7 +1785,7 @@ function renderResultsPanel(topicId) {
   const meaningPoints = rankedRecommendations.map((item) => `
       <div class="results-meaning-point">
         <h4 class="results-meaning-point-title">${item.recommendation[0]}</h4>
-        <p class="results-meaning-point-copy">${buildMeaningInsight(item)}</p>
+        <p class="results-meaning-point-copy">${item.recommendation[1]}</p>
       </div>`).join("");
 
   return `
