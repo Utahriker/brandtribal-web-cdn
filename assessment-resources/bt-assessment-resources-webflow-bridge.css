@@ -274,7 +274,7 @@ body * {
 }
 
 #assessment[data-screen="comprehensive"]:not(.is-marketing-mode) #comprehensiveBackNav {
-  margin-top: 0.85rem;
+  margin: 0.85rem 0 1.25rem;
 }
 
 #assessment[data-screen="comprehensive"]:not(.is-marketing-mode) #comprehensiveBackNav[hidden] {

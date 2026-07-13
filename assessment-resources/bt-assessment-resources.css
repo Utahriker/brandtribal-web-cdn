@@ -1605,7 +1605,7 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
 
 #assessment:not(.is-marketing-mode)[data-screen="comprehensive"] .analysis-back-nav--after-pass-on {
   width: 100%;
-  margin: 0.85rem 0 0;
+  margin: 0.85rem 0 1.25rem;
   padding: 0 var(--bt-comprehensive-content-right) 0 var(--bt-comprehensive-content-left);
   box-sizing: border-box;
 }
