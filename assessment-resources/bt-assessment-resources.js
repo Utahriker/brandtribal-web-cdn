@@ -2655,7 +2655,16 @@ function ensureWebflowPanelChrome() {
 }
 
 function ensurePassOnChrome() {
-  const linkedInIcon = "https://utahriker.github.io/brandtribal-web-cdn/assessment-resources/linkedin-in.png?v=20260713.passon2";
+  const linkedInIcon = "https://utahriker.github.io/brandtribal-web-cdn/assessment-resources/linkedin-in.png?v=20260713.passon4";
+
+  if (els.passOnInline) {
+    els.passOnInline.hidden = true;
+    els.passOnInline.style.display = "none";
+  }
+  if (els.passOnSummaryTemplate) {
+    els.passOnSummaryTemplate.hidden = true;
+    els.passOnSummaryTemplate.style.display = "none";
+  }
 
   document.querySelectorAll("#assessment [data-pass-on-action]").forEach((node) => {
     if (node.tagName === "A") {

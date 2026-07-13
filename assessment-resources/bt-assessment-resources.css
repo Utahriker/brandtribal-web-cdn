@@ -1569,6 +1569,16 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
 }
 
 /* —— Pass it on (comprehensive screen, mirrors marketing) —— */
+#previewPassOnInline,
+#previewPassOnSummaryTemplate {
+  display: none !important;
+}
+
+#previewPassOn[hidden],
+#previewPassOnComprehensive[hidden] {
+  display: none !important;
+}
+
 #assessment[data-screen="comprehensive"] .preview-pass-on-comprehensive {
   margin: 0 0 1.25rem;
   padding: 0 clamp(1.25rem, 3vw, 2rem);

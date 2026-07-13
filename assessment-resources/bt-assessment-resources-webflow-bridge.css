@@ -1494,3 +1494,50 @@ body * {
     padding-left: 0;
   }
 }
+
+/* Pass it on — Webflow WHTML may strip classes; guard by ID/attribute */
+#previewPassOnInline,
+#previewPassOnSummaryTemplate {
+  display: none !important;
+}
+
+#previewPassOn[hidden],
+#previewPassOnComprehensive[hidden],
+#previewPassOnFeedback[hidden] {
+  display: none !important;
+}
+
+#previewPassOn svg,
+#previewPassOnComprehensive svg,
+#previewPassOnSummaryTemplate svg,
+#assessment .preview-pass-on--summary svg,
+#assessment [data-pass-on-action] svg {
+  width: 1.2rem !important;
+  height: 1.2rem !important;
+  max-width: 1.2rem !important;
+  max-height: 1.2rem !important;
+  flex-shrink: 0 !important;
+  display: inline-block !important;
+  vertical-align: middle;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#assessment[data-screen="comprehensive"] #previewPassOnComprehensive .preview-pass-on-mark svg,
+#assessment[data-screen="comprehensive"] .preview-pass-on--summary .preview-pass-on-mark svg {
+  width: 0.95rem !important;
+  height: 0.95rem !important;
+  max-width: 0.95rem !important;
+  max-height: 0.95rem !important;
+}
+
+#assessment [data-pass-on-action] img {
+  width: 1.35rem !important;
+  height: 1.35rem !important;
+  max-width: 1.35rem !important;
+  max-height: 1.35rem !important;
+  display: block !important;
+}
