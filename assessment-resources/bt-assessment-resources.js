@@ -2192,7 +2192,9 @@ function mountSummaryPassOn(passOnState) {
     || templateRoot?.firstElementChild;
   if (!handoff || !templateNode) return;
 
-  handoff.insertAdjacentElement("afterend", templateNode.cloneNode(true));
+  const mounted = templateNode.cloneNode(true);
+  handoff.insertAdjacentElement("afterend", mounted);
+  repairPassOnMarkup(mounted);
 }
 
 function syncPassOnCopy(copy) {
@@ -2259,6 +2261,7 @@ function updatePassOnPanel(snapshot) {
   syncPassOnButtonStates(passOnState);
   toggleComprehensiveActionChrome(passOnState);
   mountSummaryPassOn(passOnState);
+  repairPassOnMarkup();
 
   if (!passOnState.showPanel) setPassOnFeedback("", { hidden: true });
 }
@@ -2666,38 +2669,67 @@ function ensureWebflowPanelChrome() {
   });
 }
 
-function ensurePassOnChrome() {
-  const linkedInIcon = "https://utahriker.github.io/brandtribal-web-cdn/assessment-resources/linkedin-in.png?v=20260713.passon5";
+const PASS_ON_LINKEDIN_ICON = "https://utahriker.github.io/brandtribal-web-cdn/assessment-resources/linkedin-in.png?v=20260713.passon6";
 
-  const stashIds = [
-    ["previewPassOnInline", "preview-pass-on-inline"],
-    ["previewPassOnSummaryTemplate", ""]
-  ];
-  stashIds.forEach(([id, className]) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.hidden = true;
-    el.style.display = "none";
-    if (className) el.classList.add(className);
+function findPassOnRoots(scope = document) {
+  const roots = new Set();
+  const assessment = document.getElementById("assessment");
+  if (!assessment) return [];
+
+  const searchRoot = scope?.querySelector ? scope : document;
+  searchRoot.querySelectorAll(".preview-pass-on").forEach((node) => {
+    if (assessment.contains(node)) roots.add(node);
   });
 
-  const passOn = document.getElementById("previewPassOn");
-  if (passOn) {
-    passOn.classList.add("preview-pass-on");
-    passOn.querySelectorAll("[data-pass-on-action]").forEach((btn) => {
-      btn.classList.add("preview-pass-on-btn");
-      if (btn.dataset.passOnAction === "linkedin") btn.classList.add("is-linkedin");
-    });
-    passOn.querySelectorAll(".preview-pass-on-btn-icon, [aria-hidden='true']").forEach((icon) => {
-      if (icon.closest("[data-pass-on-action='linkedin']")) icon.classList.add("preview-pass-on-btn-icon", "preview-pass-on-btn-icon--linkedin");
-      else if (icon.closest("[data-pass-on-action]")) icon.classList.add("preview-pass-on-btn-icon");
-    });
+  searchRoot.querySelectorAll("p").forEach((label) => {
+    if (label.textContent.trim() !== "Pass it on") return;
+    let node = label.parentElement;
+    while (node && node !== assessment) {
+      if (node.querySelector("[data-pass-on-action]")) {
+        roots.add(node);
+        break;
+      }
+      node = node.parentElement;
+    }
+  });
+
+  return [...roots];
+}
+
+function decoratePassOnRoot(root) {
+  if (!root) return;
+
+  const inSummary = Boolean(root.closest("#screenBody .analysis-summary-body"));
+  const inComprehensiveSlot = Boolean(root.closest("#previewPassOnComprehensive"));
+  root.classList.add("preview-pass-on");
+  if (inSummary) root.classList.add("preview-pass-on--summary");
+  if (inComprehensiveSlot) root.classList.add("is-comprehensive");
+
+  const intro = root.querySelector(":scope > div:first-child") || root.firstElementChild;
+  if (intro) intro.classList.add("preview-pass-on-intro");
+
+  const mark = intro?.querySelector("span[aria-hidden='true']");
+  if (mark) mark.classList.add("preview-pass-on-mark");
+
+  const copyblock = intro?.querySelector(":scope > div:last-child");
+  if (copyblock && copyblock !== mark) copyblock.classList.add("preview-pass-on-copyblock");
+
+  const labels = copyblock?.querySelectorAll("p") || [];
+  if (labels[0]) labels[0].classList.add("preview-pass-on-label");
+  if (labels[1]) labels[1].classList.add("preview-pass-on-copy");
+
+  const actions = root.querySelector("[data-pass-on-action]")?.parentElement;
+  if (actions) {
+    actions.classList.add("preview-pass-on-actions");
+    if (inSummary || inComprehensiveSlot) {
+      actions.classList.add("preview-pass-on-actions--comprehensive");
+    }
   }
+}
 
-  const compSlot = document.getElementById("previewPassOnComprehensive");
-  if (compSlot) compSlot.classList.add("preview-pass-on-comprehensive");
-
-  document.querySelectorAll("#assessment [data-pass-on-action]").forEach((node) => {
+function convertPassOnActions(scope = document) {
+  const searchRoot = scope?.querySelector ? scope : document;
+  searchRoot.querySelectorAll("#assessment [data-pass-on-action]").forEach((node) => {
     if (node.tagName === "A") {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -2711,15 +2743,52 @@ function ensurePassOnChrome() {
     }
   });
 
-  document.querySelectorAll("#assessment [data-pass-on-action=\"linkedin\"] img").forEach((img) => {
+  searchRoot.querySelectorAll("#assessment [data-pass-on-action]").forEach((btn) => {
+    btn.classList.add("preview-pass-on-btn");
+    if (btn.dataset.passOnAction === "linkedin") btn.classList.add("is-linkedin");
+  });
+
+  searchRoot.querySelectorAll("#assessment [data-pass-on-action] [aria-hidden='true']").forEach((icon) => {
+    if (icon.closest("[data-pass-on-action='linkedin']")) {
+      icon.classList.add("preview-pass-on-btn-icon", "preview-pass-on-btn-icon--linkedin");
+    } else if (icon.closest("[data-pass-on-action]")) {
+      icon.classList.add("preview-pass-on-btn-icon");
+    }
+  });
+
+  searchRoot.querySelectorAll("#assessment [data-pass-on-action=\"linkedin\"] img").forEach((img) => {
     if (!img.getAttribute("src")) {
-      img.src = linkedInIcon;
+      img.src = PASS_ON_LINKEDIN_ICON;
       img.alt = "";
       img.width = 20;
       img.height = 20;
       img.decoding = "async";
     }
   });
+}
+
+function repairPassOnMarkup(scope = document) {
+  findPassOnRoots(scope).forEach(decoratePassOnRoot);
+  convertPassOnActions(scope);
+}
+
+function ensurePassOnChrome() {
+  const stashIds = [
+    ["previewPassOnInline", "preview-pass-on-inline"],
+    ["previewPassOnSummaryTemplate", ""]
+  ];
+  stashIds.forEach(([id, className]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.hidden = true;
+    el.style.display = "none";
+    if (className) el.classList.add(className);
+  });
+
+  const compSlot = document.getElementById("previewPassOnComprehensive");
+  if (compSlot) compSlot.classList.add("preview-pass-on-comprehensive");
+
+  repairPassOnMarkup();
 }
 
 function initAssessment() {

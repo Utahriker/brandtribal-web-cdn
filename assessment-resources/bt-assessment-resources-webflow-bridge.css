@@ -1541,3 +1541,19 @@ body * {
   max-height: 1.35rem !important;
   display: block !important;
 }
+
+/* Cloned summary pass-on may lose classes before JS repair runs */
+#assessment[data-screen="comprehensive"] #screenBody .analysis-summary-body span[aria-hidden="true"]:not([class]) svg {
+  width: 0.95rem !important;
+  height: 0.95rem !important;
+  max-width: 0.95rem !important;
+  max-height: 0.95rem !important;
+  display: inline-block !important;
+}
+
+#assessment[data-screen="comprehensive"] #screenBody .analysis-summary-body [data-pass-on-action] svg {
+  width: 1.2rem !important;
+  height: 1.2rem !important;
+  max-width: 1.2rem !important;
+  max-height: 1.2rem !important;
+}

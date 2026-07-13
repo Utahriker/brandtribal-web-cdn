@@ -1699,6 +1699,20 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
   height: 0.95rem;
 }
 
+#assessment[data-screen="comprehensive"] #screenBody .analysis-summary-body span[aria-hidden="true"]:not([class]) svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  max-width: 0.95rem;
+  max-height: 0.95rem;
+}
+
+#assessment[data-screen="comprehensive"] #screenBody .analysis-summary-body [data-pass-on-action] svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  max-width: 1.2rem;
+  max-height: 1.2rem;
+}
+
 #assessment[data-screen="comprehensive"] .preview-pass-on--summary .preview-pass-on-copyblock {
   display: flex;
   flex-direction: column;
