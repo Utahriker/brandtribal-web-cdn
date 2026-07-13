@@ -2205,7 +2205,7 @@ function syncPassOnCopy(copy) {
 
 function toggleComprehensiveActionChrome(passOnState) {
   const useComprehensive = passOnState.placement === "comprehensive";
-  document.querySelectorAll("#assessment .preview-pass-on-actions").forEach((actions) => {
+  document.querySelectorAll("#assessment:not(.is-marketing-mode) .preview-pass-on--summary .preview-pass-on-actions").forEach((actions) => {
     actions.classList.toggle("preview-pass-on-actions--comprehensive", useComprehensive);
   });
 }
@@ -2224,6 +2224,7 @@ function placePassOnPanel(passOnState) {
   if (!target) return;
   if (els.passOn.parentElement !== target) target.appendChild(els.passOn);
   els.passOn.classList.toggle("is-comprehensive", useComprehensive);
+  els.passOn.classList.toggle("preview-pass-on--quiet", useComprehensive);
 
   const showComprehensive = useComprehensive && passOnState.showPanel;
   if (els.passOnComprehensive) {
@@ -2257,7 +2258,10 @@ function updatePassOnPanel(snapshot) {
     els.passOn.style.display = passOnState.showPanel ? "" : "none";
   }
 
-  syncPassOnCopy("Finished reviewing? Share your results or invite someone else to take the health check.");
+  els.passOn?.querySelector(".preview-pass-on-copy")?.textContent = "Share your results with a colleague, or invite someone to take the health check.";
+  document.querySelectorAll("#assessment .preview-pass-on--summary .preview-pass-on-copy").forEach((node) => {
+    node.textContent = "Finished reviewing? Share your results or invite someone else to take the health check.";
+  });
   syncPassOnButtonStates(passOnState);
   toggleComprehensiveActionChrome(passOnState);
   mountSummaryPassOn(passOnState);
@@ -2669,7 +2673,7 @@ function ensureWebflowPanelChrome() {
   });
 }
 
-const PASS_ON_LINKEDIN_ICON = "https://utahriker.github.io/brandtribal-web-cdn/assessment-resources/linkedin-in.png?v=20260713.passon7";
+const PASS_ON_LINKEDIN_ICON = "https://utahriker.github.io/brandtribal-web-cdn/assessment-resources/linkedin-in.png?v=20260713.passon8";
 
 function getResourcesAssessmentRoot() {
   const assessment = document.getElementById("assessment");
@@ -2709,7 +2713,9 @@ function decoratePassOnRoot(root) {
   const inComprehensiveSlot = Boolean(root.closest("#previewPassOnComprehensive"));
   root.classList.add("preview-pass-on");
   if (inSummary) root.classList.add("preview-pass-on--summary");
-  if (inComprehensiveSlot) root.classList.add("is-comprehensive");
+  if (inComprehensiveSlot) {
+    root.classList.add("is-comprehensive", "preview-pass-on--quiet");
+  }
 
   const intro = root.querySelector(":scope > div:first-child") || root.firstElementChild;
   if (intro) intro.classList.add("preview-pass-on-intro");
@@ -2727,9 +2733,7 @@ function decoratePassOnRoot(root) {
   const actions = root.querySelector("[data-pass-on-action]")?.parentElement;
   if (actions) {
     actions.classList.add("preview-pass-on-actions");
-    if (inSummary || inComprehensiveSlot) {
-      actions.classList.add("preview-pass-on-actions--comprehensive");
-    }
+    if (inSummary) actions.classList.add("preview-pass-on-actions--comprehensive");
   }
 }
 
