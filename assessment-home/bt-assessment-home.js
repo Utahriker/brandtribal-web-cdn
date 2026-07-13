@@ -378,27 +378,27 @@
     els.back.classList.remove("is-hidden"); setButtonLabel(els.next, "See Next Steps", true); els.next.disabled = false;
   }
   function renderCta() {
-    state.screen = "cta"; const topic = getTopic(); setStepMeta(`Step 5 of 5 · ${topic.title}`); els.screenTitle.textContent = "Turn this into a clear action plan"; els.screenCopy.textContent = "Your assessment is a useful starting point. A focused review can help confirm priorities and identify the most practical next step."; setProgress(100);
+    state.screen = "cta"; const topic = getTopic(); setStepMeta(`Step 5 of 5 · ${topic.title}`); els.screenTitle.textContent = "Turn this into a clear action plan"; els.screenCopy.textContent = "Your assessment is a useful starting point. A Brandtribal audit can examine your actual business in more detail and define clear priorities for improvement."; setProgress(100);
     els.body.innerHTML = `
     <div class="insight-grid step-options step-options--three">
       <div class="insight-card step-option-card">
         <div class="step-option-main">
           ${stepOptionIcon(STEP_OPTION_ICONS[0])}
-          <div><small>Option one</small><strong>Request an audit</strong><p>Get a practical review of your brand, website or customer experience.</p></div>
+          <div><small>Option one</small><strong>Request a Brandtribal audit</strong><p>Get a deeper review of your brand, website or customer experience.</p></div>
         </div>
-        <a class="button is-secondary is-resource is-icon is-small w-button insight-card-action" href="${LINKS.audit}"><span>Request an Audit</span>${arrowIcon()}</a>
+        <a class="button is-secondary is-resource is-icon is-small w-button insight-card-action" href="${LINKS.audit}"><span>Request a Brandtribal audit</span>${arrowIcon()}</a>
       </div>
       <div class="insight-card step-option-card">
         <div class="step-option-main">
           ${stepOptionIcon(STEP_OPTION_ICONS[1])}
-          <div><small>Option two</small><strong>Explore services</strong><p>See how strategy, websites and design support clearer communication.</p></div>
+          <div><small>Option two</small><strong>Explore our services</strong><p>See how strategy, websites and design support clearer communication.</p></div>
         </div>
-        <a class="button is-secondary is-resource is-icon is-small w-button insight-card-action" href="${LINKS.services}"><span>Explore Services</span>${arrowIcon()}</a>
+        <a class="button is-secondary is-resource is-icon is-small w-button insight-card-action" href="${LINKS.services}"><span>Explore our services</span>${arrowIcon()}</a>
       </div>
       <div class="insight-card step-option-card step-option-card--full-check">
         <div class="step-option-main">
           ${stepOptionIcon(STEP_OPTION_ICONS[2])}
-          <div><small>Option three</small><strong>Complete the full health check</strong><p>Assess all four areas and unlock a comprehensive breakdown with scores, insights and next steps.</p></div>
+          <div><small>Option three</small><strong>Complete the Business Health Check</strong><p>Assess all four areas and unlock your full results with scores, insights and next steps.</p></div>
         </div>
         <a class="button is-secondary is-resource is-icon is-small w-button insight-card-action" href="${fullHealthCheckUrl()}"><span>Start full check</span>${arrowIcon()}</a>
       </div>

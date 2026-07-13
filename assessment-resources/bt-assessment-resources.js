@@ -549,8 +549,8 @@ function getRecommendationAction(topicId, index) {
   if (actionKey === "audit") {
     return {
       type: "audit",
-      actionLabel: "Request audit",
-      label: "Request an Audit",
+      actionLabel: "Brandtribal audit",
+      label: "Request a Brandtribal audit",
       href: auditUrlWithContext(topicId)
     };
   }
@@ -663,7 +663,7 @@ function renderMarketingConfirm() {
   els.screenTitle.textContent = `${topic.title} complete`;
   els.screenCopy.textContent = next
     ? `Score saved at ${score}%. Continuing to ${next.title}…`
-    : `Score saved at ${score}%. Preparing your comprehensive analysis…`;
+    : `Score saved at ${score}%. Preparing your full results…`;
   setProgress(overallProgressPercent());
   els.body.innerHTML = `
     <div class="marketing-confirm" role="status">
@@ -689,7 +689,7 @@ function configureUnlockFooter() {
   els.footerNav.classList.add("is-hidden");
   els.footerUnlock.classList.remove("is-hidden");
   els.footerUnlockCopy.innerHTML = `
-    <strong>Comprehensive analysis unlocked</strong>
+    <strong>Full results unlocked</strong>
     <p>You've completed all four areas. View your full breakdown with scores, insights and recommended next steps.</p>`;
 }
 
@@ -1082,7 +1082,7 @@ function renderOverallFocusAreas() {
         </span>
         <span class="overall-focus-assist-copy">
           Each of the four areas has its own detailed breakdown — dimension scores, insights and next steps.
-          Open comprehensive analysis to explore them all; we recommend starting with <strong>${primary.title}</strong>.
+          Open your full results to explore them all; we recommend starting with <strong>${primary.title}</strong>.
         </span>
       </p>
     </section>`;
@@ -1126,7 +1126,7 @@ function renderOverallSummary(options = {}) {
         ${showCta ? `
         <div class="overall-summary-actions">
           <button class="button is-icon w-button" type="button" data-view-comprehensive>
-            <span>View comprehensive results</span>${arrowIcon()}
+            <span>View full results</span>${arrowIcon()}
           </button>
         </div>` : ""}
       </div>
@@ -1299,7 +1299,7 @@ function renderTopicSummary(topicId) {
       <div class="topic-summary-actions-row">
         ${retakeBtn}
         <button class="button is-icon w-button" type="button" data-view-comprehensive${comprehensiveDisabled}>
-          <span>View comprehensive results</span>${arrowIcon()}
+          <span>View full results</span>${arrowIcon()}
         </button>
       </div>
     </div>`;
@@ -1484,8 +1484,8 @@ function hasAnyProgress() {
 }
 
 function hubProgressMessage(complete) {
-  if (complete === 4) return "All four areas are complete. View your comprehensive analysis or restart to begin again.";
-  if (complete > 0) return "Select an outstanding topic above to continue. Complete all four areas to unlock your comprehensive analysis.";
+  if (complete === 4) return "All four areas are complete. View your full results or restart to begin again.";
+  if (complete > 0) return "Select an outstanding topic above to continue. Complete all four areas to unlock your full results.";
   if (hasAnyProgress()) return "You have an assessment in progress. Select a topic above to continue.";
   return "Select a topic above to begin your assessment.";
 }
@@ -1550,8 +1550,8 @@ function renderHub() {
   els.screenCopy.textContent = complete === 4
     ? (isSharedMode()
       ? "These shared results are read-only. Start your own assessment anytime."
-      : "All four areas are complete. View your comprehensive analysis or share your results below.")
-    : "Complete all four areas to unlock your comprehensive analysis. Your progress is saved automatically.";
+      : "All four areas are complete. View your full results or share your results below.")
+    : "Complete all four areas to unlock your full results. Your progress is saved automatically.";
   setHubProgress();
 
   els.body.innerHTML = `
@@ -1608,7 +1608,7 @@ function renderHub() {
         ${renderHubProgressSteps()}
       </article>
       <div class="hub-actions">
-        ${allComplete() ? `<button class="button is-icon w-button" type="button" data-view-comprehensive><span>View comprehensive analysis</span>${arrowIcon()}</button>` : ""}
+        ${allComplete() ? `<button class="button is-icon w-button" type="button" data-view-comprehensive><span>View full results</span>${arrowIcon()}</button>` : ""}
         ${isSharedMode()
           ? `<button class="button is-secondary is-quaternary w-button" type="button" data-exit-shared>Back to my assessment</button>`
           : `<button class="button is-secondary is-quaternary w-button" type="button" data-restart-assessment>Restart overall assessment</button>`}
@@ -1725,7 +1725,7 @@ function renderTopicOutcome(mode) {
     els.stepLabel.textContent = "All areas complete";
     els.topicLabel.textContent = "4 of 4 areas complete";
     els.screenTitle.textContent = "Your full assessment is ready";
-    els.screenCopy.textContent = `You've finished ${topic.title}. Review your result below, then explore your comprehensive analysis for scores, insights and recommended next steps across all four areas.`;
+  els.screenCopy.textContent = `You've finished ${topic.title}. Review your result below, then explore your full results for scores, insights and recommended next steps across all four areas.`;
   } else if (justCompleted) {
     els.stepLabel.textContent = "Area complete";
     els.topicLabel.textContent = `${completedCount()} of 4 areas complete`;
@@ -2470,7 +2470,7 @@ function isTopicTitleEyebrow(text) {
 function isScriptEyebrowLabel(text, role) {
   const t = (text || "").trim();
   if (!t || isProgressStatusEyebrow(t)) return false;
-  if (role === "step" && /^Comprehensive analysis$/i.test(t)) return true;
+  if (role === "step" && /^Full results$/i.test(t)) return true;
   if (role === "step" || role === "topic") return isTopicTitleEyebrow(t);
   return false;
 }
