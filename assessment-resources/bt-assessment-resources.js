@@ -1729,7 +1729,7 @@ function renderTopicOutcome(mode) {
 }
 
 function bindTopicOutcomeEvents() {
-  els.body.querySelector("[data-retake-topic]")?.addEventListener("click", retakeTopic);
+  els.body.querySelector("[data-retake-topic]")?.addEventListener("click", () => retakeTopic());
   els.body.querySelector("[data-continue-next]")?.addEventListener("click", () => {
     if (allComplete()) {
       if (isMarketingMode()) enterOverallAssessment();
