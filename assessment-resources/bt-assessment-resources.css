@@ -208,7 +208,13 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
 .assessment-footer.is-unlock .footer-unlock .button { flex-shrink: 0; }
 /* Button skin: localhost → assessment-standalone-buttons.css */
 .result-grid { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: clamp(1.75rem, 4vw, 3rem); align-items: center; }
-.score-wrap { width: min(100%, 280px); aspect-ratio: 1; margin: 0 auto; position: relative; display: grid; place-items: center; container-type: inline-size; --score-ring-track: var(--bt-cerise-10); --score-core-border: color-mix(in srgb, var(--bt-cerise) 42%, var(--bt-white)); }
+.score-wrap { width: min(100%, 280px); aspect-ratio: 1; margin: 0 auto; position: relative; display: grid; place-items: center; container-type: inline-size; --score-ring-track: var(--bt-cerise-10); --score-core-border: color-mix(in srgb, var(--bt-cerise) 42%, var(--bt-white)); --score-band-deep: var(--bt-iron); }
+.score-wrap[data-band="strong"] { --score-ring-track: rgba(52, 177, 143, 0.18); --score-core-border: color-mix(in srgb, #34b18f 46%, var(--bt-white)); --score-band-deep: #267a62; }
+.score-wrap[data-band="good"] { --score-ring-track: rgba(88, 110, 199, 0.18); --score-core-border: color-mix(in srgb, #586ec7 46%, var(--bt-white)); --score-band-deep: #3f5299; }
+.score-wrap[data-band="developing"] { --score-ring-track: rgba(241, 154, 48, 0.22); --score-core-border: color-mix(in srgb, #f19a30 46%, var(--bt-white)); --score-band-deep: #9a6018; }
+.score-wrap[data-band="attention"] { --score-ring-track: rgba(217, 30, 99, 0.16); --score-core-border: color-mix(in srgb, #d91e63 42%, var(--bt-white)); --score-band-deep: #a8164d; }
+.score-wrap[data-band] .score-number { color: var(--score-band-deep); }
+.score-wrap[data-band] .score-label { color: color-mix(in srgb, var(--score-band-deep) 72%, var(--bt-iron)); }
 .score-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
 .score-ring circle { fill: none; stroke-linecap: round; }
 .score-ring .ring-bg { stroke: var(--score-ring-track); stroke-width: 6; }
@@ -349,7 +355,7 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
   .hub-card.is-selected,
   .analysis-tabs-chrome,
   .analysis-tabs-header
-) .score-wrap {
+) .score-wrap:not([data-band]) {
   --score-ring-track: var(--bt-cerise-20);
   --score-core-border: color-mix(in srgb, var(--bt-cerise) 42%, var(--bt-white));
 }
@@ -675,7 +681,7 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
   width: calc(76% - 0.35rem);
 }
 .analysis-summary-score .score-core {
-  border: 2px solid color-mix(in srgb, var(--bt-cerise) 42%, var(--bt-white));
+  border: 2px solid var(--score-core-border);
 }
 .analysis-summary-score .score-wrap--compact .score-core > div {
   display: inline-flex;

@@ -1319,15 +1319,15 @@ function renderAnalysisSummary(topicId) {
 }
 
 function renderScoreRing(score, ringId = "scoreRing", compact = false, options = {}) {
-  const bandColors = {
-    strong: "#34b18f",
-    good: "#586ec7",
-    developing: "#f19a30",
-    attention: "#d91e63"
+  const bandGradients = {
+    strong: { start: "#267a62", end: "#34b18f" },
+    good: { start: "#3f5299", end: "#586ec7" },
+    developing: { start: "#9a6018", end: "#f19a30" },
+    attention: { start: "#a8164d", end: "#d91e63" }
   };
-  const solid = options.band && bandColors[options.band] ? bandColors[options.band] : null;
-  const start = solid || "#d91e63";
-  const end = solid || "#5d2e8c";
+  const bandGradient = options.band && bandGradients[options.band] ? bandGradients[options.band] : null;
+  const start = bandGradient?.start || "#d91e63";
+  const end = bandGradient?.end || "#5d2e8c";
   const wrapClass = compact ? "score-wrap score-wrap--compact" : "score-wrap";
   const bandAttr = options.band ? ` data-band="${options.band}"` : "";
   const gradId = `scoreGradient-${ringId}`;
@@ -1529,7 +1529,7 @@ function renderHub() {
                 </div>
               </div>
               <div class="hub-card-score" aria-hidden="true">
-                ${renderScoreRing(score, `hubRing-${topic.id}`, true)}
+                ${renderScoreRing(score, `hubRing-${topic.id}`, true, { band: bandKey(score) })}
               </div>
             </div>
           </button>`;
@@ -1703,7 +1703,7 @@ function renderTopicOutcome(mode) {
   els.body.innerHTML = `
     <div class="topic-complete-grid">
       <div class="topic-result-head">
-        ${renderScoreRing(score)}
+        ${renderScoreRing(score, "scoreRing", false, { band: bandKey(score) })}
         <div class="result-badge-wrap result-badge-wrap--${bandKey(score)}">
           <p class="result-badge">${band.badge}</p>
           <p class="result-badge-hint">${band.badgeHint}</p>
