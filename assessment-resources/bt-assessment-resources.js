@@ -327,7 +327,12 @@ function getElements() {
     emailPanel: document.getElementById("deliveryPanel"),
     shareResultsBtn: document.getElementById("shareResultsBtn"),
     referAssessmentBtn: document.getElementById("downloadPdfBtn"),
-    shareFeedback: document.getElementById("shareFeedback")
+    shareFeedback: document.getElementById("shareFeedback"),
+    passOn: document.getElementById("previewPassOn"),
+    passOnInline: document.getElementById("previewPassOnInline"),
+    passOnComprehensive: document.getElementById("previewPassOnComprehensive"),
+    passOnSummaryTemplate: document.getElementById("previewPassOnSummaryTemplate"),
+    passOnFeedback: document.getElementById("previewPassOnFeedback")
   };
 }
 
@@ -2144,11 +2149,157 @@ function openLinkedInShare(url = getReferShareUrl()) {
   return "opened";
 }
 
+function passItOnState(snapshot) {
+  const allComplete = Boolean(snapshot?.allComplete);
+  const isComprehensive = snapshot?.screen === "comprehensive" && allComplete && !isSharedMode();
+
+  return {
+    showPanel: isComprehensive,
+    placement: "comprehensive",
+    shareResultsEnabled: allComplete && !isSharedMode(),
+    inviteEnabled: true,
+    linkedInEnabled: true,
+    linkedInUsesResults: allComplete && !isSharedMode()
+  };
+}
+
+function passOnActionButtons(action) {
+  return document.querySelectorAll(`#assessment [data-pass-on-action="${action}"]`);
+}
+
+function syncPassOnButtonStates(passOnState) {
+  passOnActionButtons("share").forEach((btn) => {
+    btn.disabled = !passOnState.shareResultsEnabled;
+    btn.setAttribute("aria-disabled", passOnState.shareResultsEnabled ? "false" : "true");
+    btn.classList.toggle("is-locked", !passOnState.shareResultsEnabled);
+  });
+  passOnActionButtons("invite").forEach((btn) => {
+    btn.disabled = !passOnState.inviteEnabled;
+  });
+  passOnActionButtons("linkedin").forEach((btn) => {
+    btn.disabled = !passOnState.linkedInEnabled;
+  });
+}
+
+function mountSummaryPassOn(passOnState) {
+  document.querySelectorAll("#assessment .preview-pass-on--summary").forEach((node) => node.remove());
+  if (!(passOnState.placement === "comprehensive" && passOnState.showPanel)) return;
+
+  const handoff = document.querySelector("#screenBody .analysis-summary-handoff");
+  const templateNode = els.passOnSummaryTemplate?.content?.firstElementChild;
+  if (!handoff || !templateNode) return;
+
+  handoff.insertAdjacentElement("afterend", templateNode.cloneNode(true));
+}
+
+function syncPassOnCopy(copy) {
+  document.querySelectorAll("#assessment .preview-pass-on-copy").forEach((node) => {
+    node.textContent = copy;
+  });
+}
+
+function toggleComprehensiveActionChrome(passOnState) {
+  const useComprehensive = passOnState.placement === "comprehensive";
+  document.querySelectorAll("#assessment .preview-pass-on-actions").forEach((actions) => {
+    actions.classList.toggle("preview-pass-on-actions--comprehensive", useComprehensive);
+  });
+}
+
+function placePassOnPanel(passOnState) {
+  if (!els.passOn) return;
+
+  let target = els.passOnInline;
+  let useComprehensive = false;
+
+  if (passOnState.showPanel && passOnState.placement === "comprehensive" && els.passOnComprehensive) {
+    target = els.passOnComprehensive;
+    useComprehensive = true;
+  }
+
+  if (!target) return;
+  if (els.passOn.parentElement !== target) target.appendChild(els.passOn);
+  els.passOn.classList.toggle("is-comprehensive", useComprehensive);
+  if (els.passOnComprehensive) els.passOnComprehensive.hidden = !useComprehensive;
+}
+
+function setPassOnFeedback(message, { hidden = false } = {}) {
+  if (!els.passOnFeedback) return;
+  if (hidden || !message) {
+    els.passOnFeedback.hidden = true;
+    els.passOnFeedback.textContent = "";
+    return;
+  }
+  els.passOnFeedback.textContent = message;
+  els.passOnFeedback.hidden = false;
+}
+
+function updatePassOnPanel(snapshot) {
+  if (isMarketingMode()) return;
+
+  const passOnState = passItOnState(snapshot);
+  placePassOnPanel(passOnState);
+  if (els.passOn) els.passOn.hidden = !passOnState.showPanel;
+
+  syncPassOnCopy("Finished reviewing? Share your results or invite someone else to take the health check.");
+  syncPassOnButtonStates(passOnState);
+  toggleComprehensiveActionChrome(passOnState);
+  mountSummaryPassOn(passOnState);
+
+  if (!passOnState.showPanel) setPassOnFeedback("", { hidden: true });
+}
+
+async function handlePassOnShareResults() {
+  try {
+    passOnActionButtons("share").forEach((btn) => {
+      btn.disabled = true;
+    });
+    setPassOnFeedback("", { hidden: true });
+    const result = await shareOwnResults();
+    if (result === "shared") setPassOnFeedback("Results shared.");
+    else if (result === "copied") setPassOnFeedback("Share link copied to clipboard.");
+  } catch {
+    setPassOnFeedback("Could not share your results. Please try again.");
+  } finally {
+    syncPassOnButtonStates(passItOnState(getSnapshot()));
+  }
+}
+
+async function handlePassOnInviteFriend() {
+  try {
+    passOnActionButtons("invite").forEach((btn) => {
+      btn.disabled = true;
+    });
+    setPassOnFeedback("", { hidden: true });
+    const result = await referBusinessHealthCheck();
+    if (result === "shared") setPassOnFeedback("Business Health Check shared.");
+    else if (result === "copied") setPassOnFeedback("Referral link copied to clipboard.");
+  } catch {
+    setPassOnFeedback("Could not create a referral link. Please try again.");
+  } finally {
+    syncPassOnButtonStates(passItOnState(getSnapshot()));
+  }
+}
+
+function handlePassOnLinkedInShare() {
+  try {
+    setPassOnFeedback("", { hidden: true });
+    const passOnState = passItOnState(getSnapshot());
+    const url = passOnState.linkedInUsesResults
+      ? getResultsShareUrl()
+      : getReferShareUrl();
+    if (!url) throw new Error("Share URL not ready");
+    openLinkedInShare(url);
+    setPassOnFeedback("LinkedIn share opened.");
+  } catch {
+    setPassOnFeedback("Could not open LinkedIn share. Please try again.");
+  }
+}
+
 function updateAuxiliaryPanels() {
   const showDelivery = !isMarketingMode()
     && !isSharedMode()
     && allComplete()
-    && (state.screen === "hub" || state.screen === "comprehensive");
+    && state.screen === "hub";
   els.emailPanel?.classList.toggle("is-hidden", !showDelivery);
   if (!showDelivery) els.shareFeedback?.classList.add("is-hidden");
 }
@@ -2323,6 +2474,9 @@ function render() {
   if (state.screen === "comprehensive") renderComprehensive();
   else if (state.screen !== "comprehensive") els.next.style.display = "";
 
+  const assessmentRoot = document.getElementById("assessment");
+  if (assessmentRoot) assessmentRoot.dataset.screen = state.screen;
+
   document.getElementById("assessment")?.classList.toggle("is-marketing-mode", isMarketingMode());
   els.mainProgressSlot?.classList.toggle(
     "is-hidden",
@@ -2332,6 +2486,7 @@ function render() {
       || (isMarketingMode() && state.screen === "topic-complete")
   );
   updateAuxiliaryPanels();
+  if (!isMarketingMode()) updatePassOnPanel(getSnapshot());
   saveSession();
 
   if (lockScroll && savedScrollY !== null) {
@@ -2447,6 +2602,16 @@ function bindEvents() {
     } finally {
       els.referAssessmentBtn.disabled = false;
     }
+  });
+
+  document.getElementById("assessment")?.addEventListener("click", (event) => {
+    if (isMarketingMode()) return;
+    const btn = event.target.closest("[data-pass-on-action]");
+    if (!btn || btn.disabled || btn.classList.contains("is-locked")) return;
+    const action = btn.dataset.passOnAction;
+    if (action === "share") handlePassOnShareResults();
+    else if (action === "invite") handlePassOnInviteFriend();
+    else if (action === "linkedin") handlePassOnLinkedInShare();
   });
 }
 
