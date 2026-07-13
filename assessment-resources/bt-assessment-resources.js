@@ -2186,7 +2186,10 @@ function mountSummaryPassOn(passOnState) {
   if (!(passOnState.placement === "comprehensive" && passOnState.showPanel)) return;
 
   const handoff = document.querySelector("#screenBody .analysis-summary-handoff");
-  const templateNode = els.passOnSummaryTemplate?.content?.firstElementChild;
+  const templateRoot = els.passOnSummaryTemplate;
+  const templateNode = templateRoot?.content?.firstElementChild
+    || templateRoot?.querySelector(".preview-pass-on--summary")
+    || templateRoot?.firstElementChild;
   if (!handoff || !templateNode) return;
 
   handoff.insertAdjacentElement("afterend", templateNode.cloneNode(true));
