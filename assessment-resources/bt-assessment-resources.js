@@ -2654,12 +2654,44 @@ function ensureWebflowPanelChrome() {
   });
 }
 
+function ensurePassOnChrome() {
+  const linkedInIcon = "https://utahriker.github.io/brandtribal-web-cdn/assessment-resources/linkedin-in.png?v=20260713.passon2";
+
+  document.querySelectorAll("#assessment [data-pass-on-action]").forEach((node) => {
+    if (node.tagName === "A") {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = node.className;
+      [...node.attributes].forEach((attr) => {
+        if (attr.name === "href" || attr.name === "class") return;
+        btn.setAttribute(attr.name, attr.value);
+      });
+      btn.innerHTML = node.innerHTML;
+      node.replaceWith(btn);
+    }
+  });
+
+  document.querySelectorAll("#assessment [data-pass-on-action=\"linkedin\"] img").forEach((img) => {
+    if (!img.getAttribute("src")) {
+      img.src = linkedInIcon;
+      img.alt = "";
+      img.width = 20;
+      img.height = 20;
+      img.decoding = "async";
+    }
+  });
+}
+
 function initAssessment() {
   ensureShellClasses();
   els = getElements();
   if (!els.body || !els.next) return;
   document.getElementById("assessmentLoadHint")?.classList.add("is-hidden");
-  if (!isMarketingMode()) ensureWebflowPanelChrome();
+  if (!isMarketingMode()) {
+    ensureWebflowPanelChrome();
+    ensurePassOnChrome();
+    els = getElements();
+  }
   bindEvents();
 
   const sharedData = parseSharedResultsFromUrl();
