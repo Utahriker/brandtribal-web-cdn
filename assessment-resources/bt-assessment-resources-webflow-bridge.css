@@ -255,6 +255,32 @@ body * {
   background: #fff;
 }
 
+/* Comprehensive: pass-on + back-nav sit outside #screenBody — match tabpanel inner gutter */
+#assessment[data-screen="comprehensive"]:not(.is-marketing-mode) {
+  --bt-comprehensive-content-left: calc(clamp(2.2rem, 4vw, 3.5rem) + 1.35rem);
+  --bt-comprehensive-content-right: calc(clamp(1.65rem, 3vw, 3rem) + 1.35rem);
+}
+
+#assessment[data-screen="comprehensive"]:not(.is-marketing-mode) #previewPassOnComprehensive,
+#assessment[data-screen="comprehensive"]:not(.is-marketing-mode) #comprehensiveBackNav {
+  width: 100%;
+  box-sizing: border-box;
+  padding-left: var(--bt-comprehensive-content-left);
+  padding-right: var(--bt-comprehensive-content-right);
+}
+
+#assessment[data-screen="comprehensive"]:not(.is-marketing-mode) #previewPassOnComprehensive {
+  margin-top: 1.25rem;
+}
+
+#assessment[data-screen="comprehensive"]:not(.is-marketing-mode) #comprehensiveBackNav {
+  margin-top: 0.85rem;
+}
+
+#assessment[data-screen="comprehensive"]:not(.is-marketing-mode) #comprehensiveBackNav[hidden] {
+  display: none !important;
+}
+
 /* Footer nav — ID selectors (Webflow strips footer-nav classes) */
 #footerNav {
   display: flex;
@@ -1054,6 +1080,11 @@ body * {
     padding-left: 2rem;
     padding-right: 1.5rem;
   }
+
+  #assessment[data-screen="comprehensive"]:not(.is-marketing-mode) {
+    --bt-comprehensive-content-left: calc(2rem + 1.25rem);
+    --bt-comprehensive-content-right: calc(1.5rem + 1.25rem);
+  }
 }
 
 @media (max-width: 479px) {
@@ -1066,6 +1097,11 @@ body * {
     flex-direction: column-reverse;
     padding-left: 1.75rem;
     padding-right: 1.25rem;
+  }
+
+  #assessment[data-screen="comprehensive"]:not(.is-marketing-mode) {
+    --bt-comprehensive-content-left: calc(1.75rem + 1.25rem);
+    --bt-comprehensive-content-right: calc(1.25rem + 1.25rem);
   }
 
   #assessment #screenFooter .button,
