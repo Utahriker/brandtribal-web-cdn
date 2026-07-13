@@ -530,6 +530,8 @@ function updateComprehensiveBackNav() {
   if (!slot) return;
 
   const showBelowPassOn = state.screen === "comprehensive" && !isMarketingMode() && !isSharedMode();
+  els.body?.querySelector(".analysis-back-nav")?.remove();
+
   if (!showBelowPassOn) {
     slot.hidden = true;
     slot.innerHTML = "";
@@ -1958,7 +1960,6 @@ function renderComprehensive() {
 
   els.footer.classList.remove("is-hidden");
   configureComprehensiveFooter();
-  updateComprehensiveBackNav();
 }
 
 function bindTabKeyboard() {
@@ -2546,7 +2547,7 @@ function render() {
   updateAuxiliaryPanels();
   if (!isMarketingMode()) {
     updatePassOnPanel(getSnapshot());
-    if (state.screen !== "comprehensive") updateComprehensiveBackNav();
+    updateComprehensiveBackNav();
   }
   saveSession();
 
