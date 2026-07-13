@@ -1741,21 +1741,25 @@ main { width: min(var(--bt-container-large), calc(100% - 2rem)); margin: 0 auto;
 
 #assessment[data-screen="comprehensive"] .preview-pass-on-actions--comprehensive [data-pass-on-action="invite"],
 #assessment[data-screen="comprehensive"] .preview-pass-on-actions--comprehensive [data-pass-on-action="linkedin"] {
-  border-color: var(--bt-iron-12, rgba(82, 56, 89, 0.12));
-  background: #fff;
-  color: var(--bt-iron);
+  border-color: var(--bt-purple);
+  color: var(--bt-purple);
+  background: transparent;
 }
 
 #assessment[data-screen="comprehensive"] .preview-pass-on-actions--comprehensive [data-pass-on-action="invite"]:hover,
 #assessment[data-screen="comprehensive"] .preview-pass-on-actions--comprehensive [data-pass-on-action="linkedin"]:hover {
-  border-color: var(--bt-cerise);
-  color: var(--bt-cerise);
-  background: rgba(217, 30, 99, 0.04);
+  border-color: var(--bt-purple);
+  background: var(--bt-purple);
+  color: #fff;
 }
 
 #assessment[data-screen="comprehensive"] .preview-pass-on-actions--comprehensive [data-pass-on-action="invite"]:hover .preview-pass-on-btn-icon,
 #assessment[data-screen="comprehensive"] .preview-pass-on-actions--comprehensive [data-pass-on-action="linkedin"]:hover .preview-pass-on-btn-icon {
-  color: var(--bt-cerise);
+  color: #fff;
+}
+
+#assessment[data-screen="comprehensive"] .preview-pass-on-actions--comprehensive [data-pass-on-action="linkedin"]:hover .preview-pass-on-btn-icon--linkedin img {
+  filter: brightness(0) invert(1);
 }
 
 #assessment[data-screen="comprehensive"] .assessment-footer:has(#footerCta:not(.is-hidden)) {
